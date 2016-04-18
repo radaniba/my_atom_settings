@@ -1,0 +1,28 @@
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _flux = require('flux');
+
+var _flux2 = _interopRequireDefault(_flux);
+
+'use babel';
+
+var Dispatcher = new _flux2['default'].Dispatcher();
+Dispatcher.actions = {
+  add_cell: Symbol('add_cell'),
+  run_cell: Symbol('run_cell'),
+  run_active_cell: Symbol('run_active_cell'),
+  output_received: Symbol('output_received'),
+  cell_source_changed: Symbol('cell_source_changed'),
+  cell_focus: Symbol('cell_focus'),
+  interrupt_kernel: Symbol('interrupt_kernel'),
+  destroy: Symbol('destroy')
+};
+
+exports['default'] = Dispatcher;
+module.exports = exports['default'];
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9SYWQvRG9jdW1lbnRzL0Rldi9hdG9tLW5vdGVib29rL2xpYi9kaXNwYXRjaGVyLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7OztvQkFFaUIsTUFBTTs7OztBQUZ2QixXQUFXLENBQUM7O0FBSVosSUFBSSxVQUFVLEdBQUcsSUFBSSxrQkFBSyxVQUFVLEVBQUUsQ0FBQztBQUN2QyxVQUFVLENBQUMsT0FBTyxHQUFHO0FBQ25CLFVBQVEsRUFBRSxNQUFNLENBQUMsVUFBVSxDQUFDO0FBQzVCLFVBQVEsRUFBRSxNQUFNLENBQUMsVUFBVSxDQUFDO0FBQzVCLGlCQUFlLEVBQUUsTUFBTSxDQUFDLGlCQUFpQixDQUFDO0FBQzFDLGlCQUFlLEVBQUUsTUFBTSxDQUFDLGlCQUFpQixDQUFDO0FBQzFDLHFCQUFtQixFQUFFLE1BQU0sQ0FBQyxxQkFBcUIsQ0FBQztBQUNsRCxZQUFVLEVBQUUsTUFBTSxDQUFDLFlBQVksQ0FBQztBQUNoQyxrQkFBZ0IsRUFBRSxNQUFNLENBQUMsa0JBQWtCLENBQUM7QUFDNUMsU0FBTyxFQUFFLE1BQU0sQ0FBQyxTQUFTLENBQUM7Q0FDM0IsQ0FBQTs7cUJBRWMsVUFBVSIsImZpbGUiOiIvVXNlcnMvUmFkL0RvY3VtZW50cy9EZXYvYXRvbS1ub3RlYm9vay9saWIvZGlzcGF0Y2hlci5qcyIsInNvdXJjZXNDb250ZW50IjpbIid1c2UgYmFiZWwnO1xuXG5pbXBvcnQgZmx1eCBmcm9tICdmbHV4JztcblxubGV0IERpc3BhdGNoZXIgPSBuZXcgZmx1eC5EaXNwYXRjaGVyKCk7XG5EaXNwYXRjaGVyLmFjdGlvbnMgPSB7XG4gIGFkZF9jZWxsOiBTeW1ib2woJ2FkZF9jZWxsJyksXG4gIHJ1bl9jZWxsOiBTeW1ib2woJ3J1bl9jZWxsJyksXG4gIHJ1bl9hY3RpdmVfY2VsbDogU3ltYm9sKCdydW5fYWN0aXZlX2NlbGwnKSxcbiAgb3V0cHV0X3JlY2VpdmVkOiBTeW1ib2woJ291dHB1dF9yZWNlaXZlZCcpLFxuICBjZWxsX3NvdXJjZV9jaGFuZ2VkOiBTeW1ib2woJ2NlbGxfc291cmNlX2NoYW5nZWQnKSxcbiAgY2VsbF9mb2N1czogU3ltYm9sKCdjZWxsX2ZvY3VzJyksXG4gIGludGVycnVwdF9rZXJuZWw6IFN5bWJvbCgnaW50ZXJydXB0X2tlcm5lbCcpLFxuICBkZXN0cm95OiBTeW1ib2woJ2Rlc3Ryb3knKVxufVxuXG5leHBvcnQgZGVmYXVsdCBEaXNwYXRjaGVyO1xuIl19
+//# sourceURL=/Users/Rad/Documents/Dev/atom-notebook/lib/dispatcher.js

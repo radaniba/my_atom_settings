@@ -1,0 +1,30 @@
+(function() {
+  var Emitter, Utils, path;
+
+  Emitter = require('atom').Emitter;
+
+  path = require('path');
+
+  Utils = require('../lib/jekyll/utils');
+
+  describe('Utils', function() {
+    beforeEach(function() {
+      return atom.project.setPaths([path.join(__dirname, 'sample')]);
+    });
+    return it('should get the config', function(done) {
+      var Main;
+      Main = {
+        Emitter: new Emitter()
+      };
+      Main.Emitter.on('config-loaded', function() {
+        return done();
+      });
+      return Utils.getConfigFromSite();
+    });
+  });
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9qZWt5bGwvc3BlYy91dGlscy1zcGVjLmNvZmZlZSIKICBdLAogICJuYW1lcyI6IFtdLAogICJtYXBwaW5ncyI6ICJBQUFBO0FBQUEsTUFBQSxvQkFBQTs7QUFBQSxFQUFDLFVBQVcsT0FBQSxDQUFRLE1BQVIsRUFBWCxPQUFELENBQUE7O0FBQUEsRUFDQSxJQUFBLEdBQU8sT0FBQSxDQUFRLE1BQVIsQ0FEUCxDQUFBOztBQUFBLEVBR0EsS0FBQSxHQUFRLE9BQUEsQ0FBUSxxQkFBUixDQUhSLENBQUE7O0FBQUEsRUFLQSxRQUFBLENBQVMsT0FBVCxFQUFrQixTQUFBLEdBQUE7QUFDaEIsSUFBQSxVQUFBLENBQVcsU0FBQSxHQUFBO2FBQ1QsSUFBSSxDQUFDLE9BQU8sQ0FBQyxRQUFiLENBQXNCLENBQUMsSUFBSSxDQUFDLElBQUwsQ0FBVSxTQUFWLEVBQXFCLFFBQXJCLENBQUQsQ0FBdEIsRUFEUztJQUFBLENBQVgsQ0FBQSxDQUFBO1dBR0EsRUFBQSxDQUFHLHVCQUFILEVBQTRCLFNBQUMsSUFBRCxHQUFBO0FBQzFCLFVBQUEsSUFBQTtBQUFBLE1BQUEsSUFBQSxHQUFPO0FBQUEsUUFDTCxPQUFBLEVBQWEsSUFBQSxPQUFBLENBQUEsQ0FEUjtPQUFQLENBQUE7QUFBQSxNQUlBLElBQUksQ0FBQyxPQUFPLENBQUMsRUFBYixDQUFnQixlQUFoQixFQUFpQyxTQUFBLEdBQUE7ZUFDL0IsSUFBQSxDQUFBLEVBRCtCO01BQUEsQ0FBakMsQ0FKQSxDQUFBO2FBT0EsS0FBSyxDQUFDLGlCQUFOLENBQUEsRUFSMEI7SUFBQSxDQUE1QixFQUpnQjtFQUFBLENBQWxCLENBTEEsQ0FBQTtBQUFBIgp9
+
+//# sourceURL=/Users/Rad/.atom/packages/jekyll/spec/utils-spec.coffee

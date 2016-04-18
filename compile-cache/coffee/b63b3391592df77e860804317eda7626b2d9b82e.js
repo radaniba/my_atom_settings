@@ -1,0 +1,117 @@
+(function() {
+  var $, Shell, SimpleGitHubFile, findPR, foundPR, pollStatus, request;
+
+  $ = require('atom').$;
+
+  Shell = require('shell');
+
+  request = require('request');
+
+  SimpleGitHubFile = require('./SimpleGitHubFile');
+
+  foundPR = false;
+
+  findPR = function() {
+    var branch, editor, githubURL, nameWithOwner, owner, repo, requestOptions, token;
+    if (foundPR) {
+      return;
+    }
+    if (!(repo = atom.project.getRepo())) {
+      return;
+    }
+    if (!(editor = atom.workspace.getActiveEditor())) {
+      return;
+    }
+    token = atom.getGitHubAuthToken();
+    branch = repo.branch.replace('refs/heads/', '').trim();
+    githubURL = new SimpleGitHubFile(editor.getPath()).githubRepoUrl();
+    nameWithOwner = githubURL.split('.com/')[1];
+    owner = nameWithOwner.split('/')[0];
+    requestOptions = {
+      uri: "https://api.github.com/repos/" + nameWithOwner + "/pulls?access_token=" + token + "&head=" + owner + ":" + branch,
+      headers: {
+        'User-Agent': 'Atom Branch Status 0.0.1'
+      }
+    };
+    return request(requestOptions, (function(_this) {
+      return function(error, response, body) {
+        var link, pr;
+        if (!(pr = JSON.parse(body)[0])) {
+          return;
+        }
+        if ($('.atom-branch-status-pr-number').length) {
+          return;
+        }
+        foundPR = true;
+        link = $("<a class='atom-branch-status-pr-number'> #" + pr.number + " </a>");
+        link.on("click", function() {
+          return Shell.openExternal(pr.html_url);
+        });
+        return $('.icon-git-branch').after(link);
+      };
+    })(this));
+  };
+
+  pollStatus = function() {
+    var branch, editor, githubURL, nameWithOwner, repo, statusRequestOptions, token;
+    if (!(repo = atom.project.getRepo())) {
+      return;
+    }
+    if (!(editor = atom.workspace.getActiveEditor())) {
+      return;
+    }
+    token = atom.getGitHubAuthToken();
+    branch = repo.branch.replace('refs/heads/', '');
+    githubURL = new SimpleGitHubFile(editor.getPath()).githubRepoUrl();
+    nameWithOwner = githubURL.split('.com/')[1];
+    statusRequestOptions = {
+      uri: "https://api.github.com/repos/" + nameWithOwner + "/statuses/" + branch + "?access_token=" + token,
+      headers: {
+        'User-Agent': 'Atom Branch Status 0.0.1'
+      }
+    };
+    return request(statusRequestOptions, (function(_this) {
+      return function(error, response, body) {
+        var lastStatus, statuses;
+        statuses = JSON.parse(body);
+        if (!(lastStatus = statuses[0])) {
+          return;
+        }
+        if (lastStatus.state === "success") {
+          $('.git-branch').css({
+            color: "green"
+          });
+        }
+        if (lastStatus.state === "pending") {
+          $('.git-branch').css({
+            color: "yellow"
+          });
+        }
+        if (lastStatus.state === "error" || lastStatus.state === "failure") {
+          $('.git-branch').css({
+            color: "red"
+          });
+        }
+        return setTimeout(pollStatus, 5000);
+      };
+    })(this));
+  };
+
+  module.exports = {
+    activate: function(state) {
+      return setTimeout(this.retryStatus, 5000);
+    },
+    deactivate: function() {},
+    serialize: function() {},
+    retryStatus: (function(_this) {
+      return function() {
+        findPR();
+        return pollStatus();
+      };
+    })(this)
+  };
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiIgogIF0sCiAgIm5hbWVzIjogW10sCiAgIm1hcHBpbmdzIjogIkFBQUE7QUFBQSxNQUFBLGdFQUFBOztBQUFBLEVBQUMsSUFBSyxPQUFBLENBQVEsTUFBUixFQUFMLENBQUQsQ0FBQTs7QUFBQSxFQUNBLEtBQUEsR0FBUSxPQUFBLENBQVEsT0FBUixDQURSLENBQUE7O0FBQUEsRUFFQSxPQUFBLEdBQVUsT0FBQSxDQUFRLFNBQVIsQ0FGVixDQUFBOztBQUFBLEVBR0EsZ0JBQUEsR0FBbUIsT0FBQSxDQUFRLG9CQUFSLENBSG5CLENBQUE7O0FBQUEsRUFLQSxPQUFBLEdBQVUsS0FMVixDQUFBOztBQUFBLEVBT0EsTUFBQSxHQUFTLFNBQUEsR0FBQTtBQUNQLFFBQUEsNEVBQUE7QUFBQSxJQUFBLElBQVUsT0FBVjtBQUFBLFlBQUEsQ0FBQTtLQUFBO0FBQ0EsSUFBQSxJQUFBLENBQUEsQ0FBYyxJQUFBLEdBQU8sSUFBSSxDQUFDLE9BQU8sQ0FBQyxPQUFiLENBQUEsQ0FBUCxDQUFkO0FBQUEsWUFBQSxDQUFBO0tBREE7QUFFQSxJQUFBLElBQUEsQ0FBQSxDQUFjLE1BQUEsR0FBUyxJQUFJLENBQUMsU0FBUyxDQUFDLGVBQWYsQ0FBQSxDQUFULENBQWQ7QUFBQSxZQUFBLENBQUE7S0FGQTtBQUFBLElBS0EsS0FBQSxHQUFRLElBQUksQ0FBQyxrQkFBTCxDQUFBLENBTFIsQ0FBQTtBQUFBLElBUUEsTUFBQSxHQUFTLElBQUksQ0FBQyxNQUFNLENBQUMsT0FBWixDQUFvQixhQUFwQixFQUFtQyxFQUFuQyxDQUFzQyxDQUFDLElBQXZDLENBQUEsQ0FSVCxDQUFBO0FBQUEsSUFXQSxTQUFBLEdBQWdCLElBQUEsZ0JBQUEsQ0FBaUIsTUFBTSxDQUFDLE9BQVAsQ0FBQSxDQUFqQixDQUFrQyxDQUFDLGFBQW5DLENBQUEsQ0FYaEIsQ0FBQTtBQUFBLElBWUEsYUFBQSxHQUFnQixTQUFT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
+//# sourceURL=/Users/Rad/.atom/packages/branch-status/lib/atom-branch-status.coffee

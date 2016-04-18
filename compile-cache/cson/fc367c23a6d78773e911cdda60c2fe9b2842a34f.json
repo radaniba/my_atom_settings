@@ -1,0 +1,1 @@
+{"menu":[{"label":"Packages","submenu":[{"label":"Nbviewer","submenu":[{"label":"Toggle","command":"nbviewer:toggle"}]}]}],"context-menu":{".tree-view .file .name[data-name$=\\.ipynb]":[{"label":"Notebook Preview","command":"nbviewer:preview-file"}]}}

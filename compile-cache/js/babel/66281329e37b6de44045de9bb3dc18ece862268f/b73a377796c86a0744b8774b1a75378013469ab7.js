@@ -1,0 +1,28 @@
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _flux = require('flux');
+
+var _flux2 = _interopRequireDefault(_flux);
+
+'use babel';
+
+var Dispatcher = new _flux2['default'].Dispatcher();
+Dispatcher.actions = {
+  add_cell: Symbol('add_cell'),
+  run_cell: Symbol('run_cell'),
+  run_active_cell: Symbol('run_active_cell'),
+  output_received: Symbol('output_received'),
+  cell_source_changed: Symbol('cell_source_changed'),
+  cell_focus: Symbol('cell_focus'),
+  interrupt_kernel: Symbol('interrupt_kernel'),
+  destroy: Symbol('destroy')
+};
+
+exports['default'] = Dispatcher;
+module.exports = exports['default'];
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9SYWQvLmF0b20vcGFja2FnZXMvanVweXRlci1ub3RlYm9vay9saWIvZGlzcGF0Y2hlci5qcyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7Ozs7b0JBRWlCLE1BQU07Ozs7QUFGdkIsV0FBVyxDQUFDOztBQUlaLElBQUksVUFBVSxHQUFHLElBQUksa0JBQUssVUFBVSxFQUFFLENBQUM7QUFDdkMsVUFBVSxDQUFDLE9BQU8sR0FBRztBQUNuQixVQUFRLEVBQUUsTUFBTSxDQUFDLFVBQVUsQ0FBQztBQUM1QixVQUFRLEVBQUUsTUFBTSxDQUFDLFVBQVUsQ0FBQztBQUM1QixpQkFBZSxFQUFFLE1BQU0sQ0FBQyxpQkFBaUIsQ0FBQztBQUMxQyxpQkFBZSxFQUFFLE1BQU0sQ0FBQyxpQkFBaUIsQ0FBQztBQUMxQyxxQkFBbUIsRUFBRSxNQUFNLENBQUMscUJBQXFCLENBQUM7QUFDbEQsWUFBVSxFQUFFLE1BQU0sQ0FBQyxZQUFZLENBQUM7QUFDaEMsa0JBQWdCLEVBQUUsTUFBTSxDQUFDLGtCQUFrQixDQUFDO0FBQzVDLFNBQU8sRUFBRSxNQUFNLENBQUMsU0FBUyxDQUFDO0NBQzNCLENBQUE7O3FCQUVjLFVBQVUiLCJmaWxlIjoiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9qdXB5dGVyLW5vdGVib29rL2xpYi9kaXNwYXRjaGVyLmpzIiwic291cmNlc0NvbnRlbnQiOlsiJ3VzZSBiYWJlbCc7XG5cbmltcG9ydCBmbHV4IGZyb20gJ2ZsdXgnO1xuXG5sZXQgRGlzcGF0Y2hlciA9IG5ldyBmbHV4LkRpc3BhdGNoZXIoKTtcbkRpc3BhdGNoZXIuYWN0aW9ucyA9IHtcbiAgYWRkX2NlbGw6IFN5bWJvbCgnYWRkX2NlbGwnKSxcbiAgcnVuX2NlbGw6IFN5bWJvbCgncnVuX2NlbGwnKSxcbiAgcnVuX2FjdGl2ZV9jZWxsOiBTeW1ib2woJ3J1bl9hY3RpdmVfY2VsbCcpLFxuICBvdXRwdXRfcmVjZWl2ZWQ6IFN5bWJvbCgnb3V0cHV0X3JlY2VpdmVkJyksXG4gIGNlbGxfc291cmNlX2NoYW5nZWQ6IFN5bWJvbCgnY2VsbF9zb3VyY2VfY2hhbmdlZCcpLFxuICBjZWxsX2ZvY3VzOiBTeW1ib2woJ2NlbGxfZm9jdXMnKSxcbiAgaW50ZXJydXB0X2tlcm5lbDogU3ltYm9sKCdpbnRlcnJ1cHRfa2VybmVsJyksXG4gIGRlc3Ryb3k6IFN5bWJvbCgnZGVzdHJveScpXG59XG5cbmV4cG9ydCBkZWZhdWx0IERpc3BhdGNoZXI7XG4iXX0=
+//# sourceURL=/Users/Rad/.atom/packages/jupyter-notebook/lib/dispatcher.js

@@ -1,0 +1,1 @@
+{"digest":"c01afd33629eb1bd1307a9db42392624d5f307df","css":".atom-branch-status-pr-number {\n  color: inherit;\n  text-decoration: none !important;\n}\n","imports":[{"path":"static/variables/ui-variables.less","digest":"a62842e88e9f6f18817f0a1662302588958b59ac"},{"path":"static/variables/syntax-variables.less","digest":"dbb8bc25cbfa6ac53763293d81b25b8d718230f9"}],"version":1}

@@ -1,0 +1,123 @@
+(function() {
+  var $, $$, Utils, fs, path, _ref;
+
+  path = require('path');
+
+  _ref = require('atom-space-pen-views'), $ = _ref.$, $$ = _ref.$$;
+
+  fs = require('fs-plus');
+
+  Utils = require('../lib/jekyll/utils');
+
+  describe('Jekyll New Post View', function() {
+    var activationPromise, editor, editorView, _ref1;
+    _ref1 = [], activationPromise = _ref1[0], editor = _ref1[1], editorView = _ref1[2];
+    beforeEach(function() {
+      var workspaceElement;
+      expect(atom.packages.isPackageActive('jekyll')).toBe(false);
+      atom.project.setPaths([path.join(__dirname, 'sample')]);
+      workspaceElement = atom.views.getView(atom.workspace);
+      waitsForPromise(function() {
+        return atom.workspace.open('index.html');
+      });
+      return runs(function() {
+        jasmine.attachToDOM(workspaceElement);
+        editor = atom.workspace.getActiveTextEditor();
+        editorView = atom.views.getView(editor);
+        return activationPromise = atom.packages.activatePackage('jekyll');
+      });
+    });
+    describe('the view', function() {
+      it('should appear as a modal', function() {
+        atom.commands.dispatch(editorView, 'jekyll:new-post');
+        waitsForPromise(function() {
+          return activationPromise;
+        });
+        return runs(function() {
+          var dialog;
+          dialog = $(atom.workspace.getModalPanels()[0].getItem()).view();
+          expect(dialog).toExist();
+          expect(dialog.promptText).toExist();
+          return expect(dialog.miniEditor).toHaveFocus();
+        });
+      });
+      return it('should allow you to confirm the entry', function() {
+        atom.commands.dispatch(editorView, 'jekyll:new-post');
+        waitsForPromise(function() {
+          return activationPromise;
+        });
+        return runs(function() {
+          var dialog, fileContents, fileName, pathToCreate, titleName, _ref2;
+          dialog = $(atom.workspace.getModalPanels()[0].getItem()).view();
+          titleName = Utils.generateFileName('Jekyll New Post');
+          fileName = path.join('_posts', titleName + '.markdown');
+          pathToCreate = (_ref2 = atom.project.getDirectories()[0]) != null ? _ref2.resolve(fileName) : void 0;
+          if (fs.existsSync(pathToCreate)) {
+            fs.unlinkSync(pathToCreate);
+          }
+          expect(fs.existsSync(pathToCreate)).toBe(false);
+          dialog.miniEditor.setText('Jekyll New Post');
+          expect(dialog.miniEditor.getText()).toBe('Jekyll New Post');
+          atom.commands.dispatch(dialog.element, 'core:confirm');
+          expect(fs.existsSync(pathToCreate)).toBe(true);
+          if (fs.existsSync(pathToCreate)) {
+            fileContents = fs.readFileSync(pathToCreate, {
+              encoding: 'UTF-8'
+            });
+            expect(fileContents).toBe(dialog.fileContents('Jekyll New Post', Utils.generateDateString(new Date(), true)));
+            return fs.unlinkSync(pathToCreate);
+          } else {
+            throw 'file not created';
+          }
+        });
+      });
+    });
+    return describe('the functions', function() {
+      it('should generate a date string and file name', function() {
+        atom.commands.dispatch(editorView, 'jekyll:new-post');
+        waitsForPromise(function() {
+          return activationPromise;
+        });
+        return runs(function() {
+          var dialog;
+          dialog = $(atom.workspace.getModalPanels()[0].getItem()).view();
+          expect(Utils.generateDateString(new Date(0))).toBe('1970-01-01');
+          return expect(Utils.generateFileName('Jekyll New Post')).toBe(Utils.generateDateString() + '-jekyll-new-post');
+        });
+      });
+      return it('should create a post', function() {
+        atom.commands.dispatch(editorView, 'jekyll:new-post');
+        waitsForPromise(function() {
+          return activationPromise;
+        });
+        return runs(function() {
+          var dialog, fileContents, fileName, pathToCreate, titleName, _ref2;
+          dialog = $(atom.workspace.getModalPanels()[0].getItem()).view();
+          titleName = Utils.generateFileName('Jekyll New Post');
+          fileName = path.join('_posts', titleName + '.markdown');
+          pathToCreate = (_ref2 = atom.project.getDirectories()[0]) != null ? _ref2.resolve(fileName) : void 0;
+          if (fs.existsSync(pathToCreate)) {
+            fs.unlinkSync(pathToCreate);
+          }
+          expect(fs.existsSync(pathToCreate)).toBe(false);
+          dialog.onConfirm('Jekyll New Post');
+          expect(fs.existsSync(pathToCreate)).toBe(true);
+          if (fs.existsSync(pathToCreate)) {
+            fileContents = fs.readFileSync(pathToCreate, {
+              encoding: 'UTF-8'
+            });
+            expect(fileContents).toBe(dialog.fileContents('Jekyll New Post', Utils.generateDateString(new Date(), true)));
+            return fs.unlinkSync(pathToCreate);
+          } else {
+            throw 'file not created';
+          }
+        });
+      });
+    });
+  });
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9qZWt5bGwvc3BlYy9uZXctcG9zdC12aWV3LXNwZWMuY29mZmVlIgogIF0sCiAgIm5hbWVzIjogW10sCiAgIm1hcHBpbmdzIjogIkFBQUE7QUFBQSxNQUFBLDRCQUFBOztBQUFBLEVBQUEsSUFBQSxHQUFPLE9BQUEsQ0FBUSxNQUFSLENBQVAsQ0FBQTs7QUFBQSxFQUNBLE9BQVUsT0FBQSxDQUFRLHNCQUFSLENBQVYsRUFBQyxTQUFBLENBQUQsRUFBSSxVQUFBLEVBREosQ0FBQTs7QUFBQSxFQUVBLEVBQUEsR0FBSyxPQUFBLENBQVEsU0FBUixDQUZMLENBQUE7O0FBQUEsRUFJQSxLQUFBLEdBQVEsT0FBQSxDQUFRLHFCQUFSLENBSlIsQ0FBQTs7QUFBQSxFQU1BLFFBQUEsQ0FBUyxzQkFBVCxFQUFpQyxTQUFBLEdBQUE7QUFDL0IsUUFBQSw0Q0FBQTtBQUFBLElBQUEsUUFBMEMsRUFBMUMsRUFBQyw0QkFBRCxFQUFvQixpQkFBcEIsRUFBNEIscUJBQTVCLENBQUE7QUFBQSxJQUVBLFVBQUEsQ0FBVyxTQUFBLEdBQUE7QUFDVCxVQUFBLGdCQUFBO0FBQUEsTUFBQSxNQUFBLENBQU8sSUFBSSxDQUFDLFFBQVEsQ0FBQyxlQUFkLENBQThCLFFBQTlCLENBQVAsQ0FBK0MsQ0FBQyxJQUFoRCxDQUFxRCxLQUFyRCxDQUFBLENBQUE7QUFBQSxNQUVBLElBQUksQ0FBQyxPQUFPLENBQUMsUUFBYixDQUFzQixDQUFDLElBQUksQ0FBQyxJQUFMLENBQVUsU0FBVixFQUFxQixRQUFyQixDQUFELENBQXRCLENBRkEsQ0FBQTtBQUFBLE1BSUEsZ0JBQUEsR0FBbUIsSUFBSSxDQUFDLEtBQUssQ0FBQyxPQUFYLENBQW1CLElBQUksQ0FBQyxTQUF4QixDQUpuQixDQUFBO0FBQUEsTUFNQSxlQUFBLENBQWdCLFNBQUEsR0FBQTtlQUNkLElBQUks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
+
+//# sourceURL=/Users/Rad/.atom/packages/jekyll/spec/new-post-view-spec.coffee

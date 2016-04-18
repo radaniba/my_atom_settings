@@ -1,0 +1,127 @@
+
+/*
+  lib/map.coffee
+ */
+
+(function() {
+  var log,
+    __slice = [].slice;
+
+  log = function() {
+    var args;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return console.log.apply(console, ['markdown-scroll, map:'].concat(args));
+  };
+
+  module.exports = {
+    setMap: function(getVis) {
+      var addNodeToMap, bot, botRow, bufRow, firstNode, hgt, idx, idxMatch, line, match, matches, maxLen, node, nodeMatch, nodePtr, start, target, text, timings, top, topRow, wlkr, _i, _j, _k, _l, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
+      if (getVis == null) {
+        getVis = true;
+      }
+      start = Date.now();
+      timings = {};
+      if (getVis) {
+        this.getVisTopHgtBot();
+        timings['getVisTopHgtBot'] = Date.now() - start;
+        start = Date.now();
+      }
+      this.nodes = [];
+      wlkr = document.createTreeWalker(this.previewEle, NodeFilter.SHOW_TEXT, null, true);
+      while ((node = wlkr.nextNode())) {
+        text = node.textContent;
+        if (!/\w+/.test(text)) {
+          continue;
+        }
+        _ref = this.getEleTopHgtBot(node.parentNode, false), top = _ref[0], hgt = _ref[1], bot = _ref[2];
+        this.nodes.push([top, bot, null, null, text, null]);
+      }
+      timings['tree walk'] = Date.now() - start;
+      start = Date.now();
+      nodePtr = 0;
+      for (bufRow = _i = 0, _ref1 = this.editor.getLastBufferRow(); 0 <= _ref1 ? _i <= _ref1 : _i >= _ref1; bufRow = 0 <= _ref1 ? ++_i : --_i) {
+        line = this.editor.lineTextForBufferRow(bufRow);
+        if (!(matches = line.match(/[a-z0-9-\s]+/ig))) {
+          continue;
+        }
+        maxLen = 0;
+        target = null;
+        for (_j = 0, _len = matches.length; _j < _len; _j++) {
+          match = matches[_j];
+          if (!(/\w+/.test(match))) {
+            continue;
+          }
+          match = match.replace(/^\s+|\s+$/g, '');
+          if (match.length > maxLen) {
+            maxLen = match.length;
+            target = match;
+          }
+        }
+        if (target) {
+          nodeMatch = null;
+          _ref2 = this.nodes.slice(nodePtr);
+          for (idx = _k = 0, _len1 = _ref2.length; _k < _len1; idx = ++_k) {
+            node = _ref2[idx];
+            if (node[4].includes(target)) {
+              if (nodeMatch) {
+                nodeMatch = 'dup';
+                break;
+              }
+              nodeMatch = node;
+              idxMatch = idx;
+            }
+          }
+          if (!nodeMatch || nodeMatch === 'dup') {
+            continue;
+          }
+          _ref3 = this.editor.screenRangeForBufferRange([[bufRow, 0], [bufRow, 9e9]]), (_ref4 = _ref3.start, topRow = _ref4.row), (_ref5 = _ref3.end, botRow = _ref5.row);
+          nodeMatch[2] = topRow;
+          nodeMatch[3] = botRow;
+          nodeMatch[5] = target;
+          nodePtr = idxMatch;
+        }
+      }
+      timings['node match'] = Date.now() - start;
+      start = Date.now();
+      this.map = [[0, 0, 0, 0]];
+      this.lastTopPix = this.lastBotPix = this.lastTopRow = this.lastBotRow = 0;
+      firstNode = true;
+      addNodeToMap = (function(_this) {
+        return function(node) {
+          var botPix, topPix;
+          topPix = node[0], botPix = node[1], topRow = node[2], botRow = node[3];
+          if (topPix < _this.lastBotPix || topRow <= _this.lastBotRow) {
+            _this.lastTopPix = Math.min(topPix, _this.lastTopPix);
+            _this.lastBotPix = Math.max(botPix, _this.lastBotPix);
+            _this.lastTopRow = Math.min(topRow, _this.lastTopRow);
+            _this.lastBotRow = Math.max(botRow, _this.lastBotRow);
+            _this.map[_this.map.length - 1] = [_this.lastTopPix, _this.lastBotPix, _this.lastTopRow, _this.lastBotRow];
+          } else {
+            if (firstNode) {
+              _this.map[0][1] = topPix;
+              _this.map[0][3] = Math.max(0, topRow - 1);
+            }
+            _this.map.push([_this.lastTopPix = topPix, _this.lastBotPix = botPix, _this.lastTopRow = topRow, _this.lastBotRow = botRow]);
+          }
+          return firstNode = false;
+        };
+      })(this);
+      _ref6 = this.nodes;
+      for (_l = 0, _len2 = _ref6.length; _l < _len2; _l++) {
+        node = _ref6[_l];
+        if (node[2] !== null) {
+          addNodeToMap(node);
+        }
+      }
+      botRow = this.editor.getLastScreenRow();
+      topRow = Math.min(botRow, this.lastBotRow + 1);
+      addNodeToMap([this.lastBotPix, this.previewEle.scrollHeight, topRow, botRow]);
+      return this.nodes = null;
+    }
+  };
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9tYXJrZG93bi1zY3JvbGwtc3luYy9saWIvbWFwLmNvZmZlZSIKICBdLAogICJuYW1lcyI6IFtdLAogICJtYXBwaW5ncyI6ICJBQUFBO0FBQUE7O0dBQUE7QUFBQTtBQUFBO0FBQUEsTUFBQSxHQUFBO0lBQUEsa0JBQUE7O0FBQUEsRUFJQSxHQUFBLEdBQU0sU0FBQSxHQUFBO0FBQ0osUUFBQSxJQUFBO0FBQUEsSUFESyw4REFDTCxDQUFBO1dBQUEsT0FBTyxDQUFDLEdBQUcsQ0FBQyxLQUFaLENBQWtCLE9BQWxCLEVBQTJCLENBQUMsdUJBQUQsQ0FBeUIsQ0FBQyxNQUExQixDQUFpQyxJQUFqQyxDQUEzQixFQURJO0VBQUEsQ0FKTixDQUFBOztBQUFBLEVBT0EsTUFBTSxDQUFDLE9BQVAsR0FFRTtBQUFBLElBQUEsTUFBQSxFQUFRLFNBQUMsTUFBRCxHQUFBO0FBQ04sVUFBQSw2UEFBQTs7UUFETyxTQUFTO09BQ2hCO0FBQUEsTUFBQSxLQUFBLEdBQVEsSUFBSSxDQUFDLEdBQUwsQ0FBQSxDQUFSLENBQUE7QUFBQSxNQUNBLE9BQUEsR0FBVSxFQURWLENBQUE7QUFHQSxNQUFBLElBQUcsTUFBSDtBQUNFLFFBQUEsSUFBQyxDQUFBLGVBQUQsQ0FBQSxDQUFBLENBQUE7QUFBQSxRQUNBLE9BQVEsQ0FBQSxpQkFBQSxDQUFSLEdBQTZCLElBQUksQ0FBQyxHQUFMLENBQUEsQ0FBQSxHQUFhLEtBRDFDLENBQUE7QUFBQSxRQUNpRCxLQUFBLEdBQVEsSUFBSSxDQUFDLEdBQUwsQ0FBQSxDQUR6RCxDQURGO09BSEE7QUFBQSxNQU9BLElBQUMsQ0FBQSxLQUFELEdBQVMsRUFQVCxDQUFBO0FBQUEsTUFRQSxJQUFBLEdBQU8sUUFBUSxDQUFDLGdCQUFULENBQTBCLElBQUMsQ0FBQSxVQUEzQixFQUF1QyxVQUFVLENBQUMsU0FBbEQsRUFB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
+
+//# sourceURL=/Users/Rad/.atom/packages/markdown-scroll-sync/lib/map.coffee

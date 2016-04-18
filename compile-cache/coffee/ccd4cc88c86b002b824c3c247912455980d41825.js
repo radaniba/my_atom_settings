@@ -1,0 +1,79 @@
+(function() {
+  var fs, header, io_port, io_socket, jmp, kernel_file_name, kernel_file_path, kernel_info, message, shell_port, shell_socket, zmq, _,
+    __slice = [].slice;
+
+  fs = require('fs');
+
+  _ = require('lodash');
+
+  jmp = require('jmp');
+
+  zmq = jmp.zmq;
+
+  shell_socket = zmq.socket('dealer');
+
+  io_socket = zmq.socket('sub');
+
+  shell_socket.identity = 'dealer' + process.pid;
+
+  io_socket.identity = 'sub' + process.pid;
+
+  shell_socket.on('message', function() {
+    var msg;
+    msg = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    console.log("new shell message");
+    return _.forEach(msg, function(item) {
+      return console.log("shell received:", item.toString('utf8'));
+    });
+  });
+
+  io_socket.on('message', function() {
+    var msg;
+    msg = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    console.log("new IO message");
+    return _.forEach(msg, function(item) {
+      return console.log("io received:", item.toString('utf8'));
+    });
+  });
+
+  kernel_file_name = 'kernel-5666.json';
+
+  kernel_file_path = '/Users/will/Library/Jupyter/runtime/' + kernel_file_name;
+
+  kernel_info = JSON.parse(fs.readFileSync(kernel_file_path));
+
+  shell_port = kernel_info.shell_port;
+
+  io_port = kernel_info.iopub_port;
+
+  shell_socket.connect('tcp://127.0.0.1:' + shell_port);
+
+  io_socket.connect('tcp://127.0.0.1:' + io_port);
+
+  io_socket.subscribe('');
+
+  header = JSON.stringify({
+    msg_id: 0,
+    username: "will",
+    session: "00000000-0000-0000-0000-000000000000",
+    msg_type: "execute_request",
+    version: "5.0"
+  });
+
+  message = [
+    '<IDS|MSG>', '', header, '{}', '{}', JSON.stringify({
+      code: "a - 4",
+      silent: false,
+      store_history: true,
+      user_expressions: {},
+      allow_stdin: false
+    })
+  ];
+
+  shell_socket.send(message);
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9oeWRyb2dlbi90ZXN0LmNvZmZlZSIKICBdLAogICJuYW1lcyI6IFtdLAogICJtYXBwaW5ncyI6ICJBQUFBO0FBQUEsTUFBQSwrSEFBQTtJQUFBLGtCQUFBOztBQUFBLEVBQUEsRUFBQSxHQUFLLE9BQUEsQ0FBUSxJQUFSLENBQUwsQ0FBQTs7QUFBQSxFQUNBLENBQUEsR0FBSSxPQUFBLENBQVEsUUFBUixDQURKLENBQUE7O0FBQUEsRUFFQSxHQUFBLEdBQU0sT0FBQSxDQUFRLEtBQVIsQ0FGTixDQUFBOztBQUFBLEVBR0EsR0FBQSxHQUFNLEdBQUcsQ0FBQyxHQUhWLENBQUE7O0FBQUEsRUFLQSxZQUFBLEdBQWUsR0FBRyxDQUFDLE1BQUosQ0FBVyxRQUFYLENBTGYsQ0FBQTs7QUFBQSxFQU1BLFNBQUEsR0FBZSxHQUFHLENBQUMsTUFBSixDQUFXLEtBQVgsQ0FOZixDQUFBOztBQUFBLEVBUUEsWUFBWSxDQUFDLFFBQWIsR0FBd0IsUUFBQSxHQUFXLE9BQU8sQ0FBQyxHQVIzQyxDQUFBOztBQUFBLEVBU0EsU0FBUyxDQUFDLFFBQVYsR0FBcUIsS0FBQSxHQUFRLE9BQU8sQ0FBQyxHQVRyQyxDQUFBOztBQUFBLEVBV0EsWUFBWSxDQUFDLEVBQWIsQ0FBZ0IsU0FBaEIsRUFBMkIsU0FBQSxHQUFBO0FBQ3ZCLFFBQUEsR0FBQTtBQUFBLElBRHdCLDZEQUN4QixDQUFBO0FBQUEsSUFBQSxPQUFPLENBQUMsR0FBUixDQUFZLG1CQUFaLENBQUEsQ0FBQTtXQUNBLENBQUMsQ0FBQyxPQUFGLENBQVUsR0FBVixFQUFjLFNBQUMsSUFBRCxHQUFBO2FBQ1YsT0FBTyxDQUFDLEdBQVIsQ0FBWSxpQkFBWixFQUErQixJQUFJLENBQUMsUUFBTCxDQUFjLE1BQWQsQ0FBL0IsRUFEVTtJQUFBLENBQWQsRUFGdUI7RUFBQSxDQUEzQixDQVhBLENBQUE7O0FBQUEsRUFnQkEsU0FBUyxDQUFDLEVBQVYsQ0FBYSxTQUFiLEVBQXdCLFNBQUEsR0FBQTtBQUNwQixRQUFBLEdBQUE7QUFBQSxJQURxQiw2REFDckIsQ0FBQTtBQUFBLElBQUEsT0FBTyxDQUFDLEdBQVIsQ0FBWSxnQkFBWixDQUFBLENBQUE7V0FDQSxDQUFDLENBQUMsT0FBRixDQUFVLEdBQVYsRUFBZSxTQUFDLElBQUQsR0FBQTthQUNYLE9BQU8sQ0FBQyxHQUFSLENBQVksY0FBWixFQUE0QixJQUFJLENBQUMsUUFBTCxDQUFjLE1BQWQsQ0FBNUIsRUFEVztJQUFBLENBQWYsRUFGb0I7RUFBQSxDQUF4QixDQWhCQSxDQUFBOztBQUFBLEVBc0JBLGdCQUFBLEdBQW1CLGtCQXRCbkIsQ0FBQTs7QUFBQSxFQXVCQSxnQkFBQSxHQUFtQixzQ0FBQSxHQUF5QyxnQkF2QjVELENBQUE7O0FBQUEsRUF3QkEsV0FBQSxHQUFjLElBQUksQ0FBQyxLQUFMLENBQVcsRUFBRSxDQUFDLFlBQUgsQ0FBZ0IsZ0JBQWhCLENBQVgsQ0F4QmQsQ0FBQTs7QUFBQSxFQTBCQSxVQUFBLEdBQWEsV0FBVyxDQUFDLFVBMUJ6QixDQUFBOztBQUFBLEVBMkJBLE9BQUEsR0FBVSxXQUFXLENBQUMsVUEzQnRCLENBQUE7O0FBQUEsRUE2QkEsWUFBWSxDQUFDLE9BQWIsQ0FBcUIsa0JBQUEsR0FBcUIsVUFBMUMsQ0E3QkEsQ0FBQTs7QUFBQSxFQThCQSxTQUFTLENBQUMsT0FBVixDQUFrQixrQkFBQSxHQUFxQixPQUF2QyxDQTlCQSxDQUFBOztBQUFBLEVBK0JBLFNBQVMsQ0FBQyxTQUFWLENBQW9CLEVBQXBCLENBL0JBLENBQUE7O0FBQUEsRUFtQ0EsTUFBQSxHQUFTLElBQUksQ0FBQyxTQUFMLENBQ0w7QUFBQSxJQUFBLE1BQUEsRUFBUSxDQUFSO0FBQUEsSUFDQSxRQUFBLEVBQVUsTUFEVjtBQUFBLElBRUEsT0FBQSxFQUFTLHNDQUZUO0FBQUEsSUFHQSxRQUFBLEVBQVUsaUJBSFY7QUFBQSxJQUlBLE9BQUEsRUFBUyxLQUpUO0dBREssQ0FuQ1QsQ0FBQTs7QUFBQSxFQTBDQSxPQUFBLEdBQVU7SUFDTixXQURNLEVBRU4sRUFGTSxFQUdOLE1BSE0sRUFJTixJQUpNLEVBS04sSUFMTSxFQU1OLElBQUksQ0FBQyxTQUFMLENBQ0k7QUFBQSxNQUFBLElBQUEsRUFBTSxPQUFOO0FBQUEsTUFDQSxNQUFBLEVBQVEsS0FEUjtBQUFBLE1BRUEsYUFBQSxFQUFlLElBRmY7QUFBQSxNQUdBLGdCQUFBLEVBQWtCLEVBSGxCO0FBQUEsTUFJQSxXQUFBLEVBQWEsS0FKYjtLQURKLENBTk07R0ExQ1YsQ0FBQTs7QUFBQSxFQXdEQSxZQUFZLENBQUMsSUFBYixDQUFrQixPQUFsQixDQXhEQSxDQUFBO0FBQUEiCn0=
+
+//# sourceURL=/Users/Rad/.atom/packages/hydrogen/test.coffee

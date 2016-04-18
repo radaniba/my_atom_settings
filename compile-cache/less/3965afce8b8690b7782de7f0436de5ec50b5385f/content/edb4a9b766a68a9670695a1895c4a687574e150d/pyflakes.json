@@ -1,0 +1,1 @@
+{"digest":"93f9492ab35d3689b2ebb291a025e5a0d058a31c","css":".atom-pyflakes-error {\n  color: #cc0000;\n}\n","imports":[{"path":"node_modules/atom-dark-ui/stylesheets/ui-variables.less","digest":"88449568a730803edd89868ac8bae7144588db72"}],"version":1}

@@ -1,0 +1,9 @@
+# For more detailed documentation see
+# https://atom.io/docs/latest/advanced/keymaps
+
+# Only bind the keys in the editor
+'.editor':
+  'cmd-i': 'script:run'
+  'ctrl-w': 'script:close-view'
+  'ctrl-c': 'script:kill-process'
+  'shift-cmd-i': 'script:run-options'

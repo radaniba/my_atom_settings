@@ -1,0 +1,46 @@
+{
+  "name": "aligner-php",
+  "main": "./lib/main",
+  "version": "1.0.0",
+  "description": "PHP support for aligner",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrianlee44/atom-aligner-php.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "atom": ">=0.174.0 <2.0.0"
+  },
+  "dependencies": {},
+  "providedServices": {
+    "aligner.provider": {
+      "versions": {
+        "1.0.0": "getProvider"
+      }
+    }
+  },
+  "readme": "# aligner-php\n\n[Aligner](https://github.com/adrianlee44/atom-aligner) add-on to support PHP.\n\n## Installation\nAligner must be installed along with this package. For more information, please check out [Aligner](https://github.com/adrianlee44/atom-aligner)\n\n## Changelog\n- 2015-05-13   v1.0.0   Initial release\n",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/adrianlee44/atom-aligner-php/issues"
+  },
+  "homepage": "https://github.com/adrianlee44/atom-aligner-php#readme",
+  "_id": "aligner-php@1.0.0",
+  "_shasum": "d09f1e103e42536055eefdb156c5fa7ccadee0bd",
+  "_resolved": "file:../d-116125-62755-1kn7dwe/package.tgz",
+  "_from": "../d-116125-62755-1kn7dwe/package.tgz",
+  "_atomModuleCache": {
+    "version": 1,
+    "dependencies": [],
+    "extensions": {
+      ".coffee": [
+        "lib/main.coffee",
+        "lib/provider.coffee"
+      ],
+      ".json": [
+        "package.json"
+      ]
+    },
+    "folders": []
+  }
+}

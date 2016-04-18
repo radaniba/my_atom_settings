@@ -1,0 +1,52 @@
+{
+  "name": "autocomplete-awk",
+  "main": "./lib/main",
+  "version": "0.1.2",
+  "description": "AWK functions and built-in variables autocompletions.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/c-steiner/autocomplete-awk.git"
+  },
+  "keywords": [
+    "autocomplete",
+    "awk"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/c-steiner/autocomplete-awk/issues"
+  },
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "providedServices": {
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "getProvider"
+      }
+    }
+  },
+  "dependencies": {},
+  "readme": "# AWK Autocomplete Package\n[![apm](https://img.shields.io/apm/l/icon-fonts.svg?style=flat)](https://atom.io/packages/autocomplete-awk)\n\nAWK functions and built-in variables autocompletions in Atom. Uses the [autocomplete-plus](https://github.com/atom-community/autocomplete-plus) package.\n\n\n## Preview\n![Autocomplete Preview](https://cloud.githubusercontent.com/assets/15639707/11040537/1b20fb16-870d-11e5-8a2e-f7bfa5aca8da.png)\n\n\n\n## Installation\n\n```sh\napm install autocomplete-awk\n```\n\nor find it in the Packages tab under settings.\n",
+  "readmeFilename": "README.md",
+  "homepage": "https://github.com/c-steiner/autocomplete-awk#readme",
+  "_id": "autocomplete-awk@0.1.2",
+  "_shasum": "3c48f7bf8497af7b851c556f48929249df2df50a",
+  "_resolved": "file:../d-11614-59705-1v5hucq/package.tgz",
+  "_from": "../d-11614-59705-1v5hucq/package.tgz",
+  "_atomModuleCache": {
+    "version": 1,
+    "dependencies": [],
+    "extensions": {
+      ".json": [
+        "coffeelint.json",
+        "completions.json",
+        "package.json"
+      ],
+      ".coffee": [
+        "lib/main.coffee",
+        "lib/provider.coffee"
+      ]
+    },
+    "folders": []
+  }
+}

@@ -1,0 +1,48 @@
+(function() {
+  var ToolBarManager;
+
+  ToolBarManager = null;
+
+  module.exports = {
+    toolBar: null,
+    activate: function() {
+      var ToolBarView;
+      ToolBarView = require('./tool-bar-view');
+      this.toolBar = new ToolBarView();
+      return ToolBarManager = require('./tool-bar-manager');
+    },
+    deactivate: function() {
+      this.toolBar.destroy();
+      return this.toolBar = null;
+    },
+    serialize: function() {},
+    config: {
+      position: {
+        type: 'string',
+        "default": 'Top',
+        "enum": ['Top', 'Right', 'Bottom', 'Left']
+      },
+      visible: {
+        type: 'boolean',
+        "default": true
+      },
+      iconSize: {
+        type: 'string',
+        "default": '24px',
+        "enum": ['12px', '16px', '24px', '32px']
+      }
+    },
+    provideToolBar: function() {
+      return (function(_this) {
+        return function(group) {
+          return new ToolBarManager(group, _this.toolBar);
+        };
+      })(this);
+    }
+  };
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy90b29sLWJhci9saWIvdG9vbC1iYXIuY29mZmVlIgogIF0sCiAgIm5hbWVzIjogW10sCiAgIm1hcHBpbmdzIjogIkFBQUE7QUFBQSxNQUFBLGNBQUE7O0FBQUEsRUFBQSxjQUFBLEdBQWlCLElBQWpCLENBQUE7O0FBQUEsRUFFQSxNQUFNLENBQUMsT0FBUCxHQUNFO0FBQUEsSUFBQSxPQUFBLEVBQVMsSUFBVDtBQUFBLElBRUEsUUFBQSxFQUFVLFNBQUEsR0FBQTtBQUNSLFVBQUEsV0FBQTtBQUFBLE1BQUEsV0FBQSxHQUFjLE9BQUEsQ0FBUSxpQkFBUixDQUFkLENBQUE7QUFBQSxNQUNBLElBQUMsQ0FBQSxPQUFELEdBQWUsSUFBQSxXQUFBLENBQUEsQ0FEZixDQUFBO2FBRUEsY0FBQSxHQUFpQixPQUFBLENBQVEsb0JBQVIsRUFIVDtJQUFBLENBRlY7QUFBQSxJQU9BLFVBQUEsRUFBWSxTQUFBLEdBQUE7QUFDVixNQUFBLElBQUMsQ0FBQSxPQUFPLENBQUMsT0FBVCxDQUFBLENBQUEsQ0FBQTthQUNBLElBQUMsQ0FBQSxPQUFELEdBQVcsS0FGRDtJQUFBLENBUFo7QUFBQSxJQVdBLFNBQUEsRUFBVyxTQUFBLEdBQUEsQ0FYWDtBQUFBLElBYUEsTUFBQSxFQUNFO0FBQUEsTUFBQSxRQUFBLEVBQ0U7QUFBQSxRQUFBLElBQUEsRUFBTSxRQUFOO0FBQUEsUUFDQSxTQUFBLEVBQVMsS0FEVDtBQUFBLFFBRUEsTUFBQSxFQUFNLENBQUMsS0FBRCxFQUFRLE9BQVIsRUFBaUIsUUFBakIsRUFBMkIsTUFBM0IsQ0FGTjtPQURGO0FBQUEsTUFJQSxPQUFBLEVBQ0U7QUFBQSxRQUFBLElBQUEsRUFBTSxTQUFOO0FBQUEsUUFDQSxTQUFBLEVBQVMsSUFEVDtPQUxGO0FBQUEsTUFPQSxRQUFBLEVBQ0U7QUFBQSxRQUFBLElBQUEsRUFBTSxRQUFOO0FBQUEsUUFDQSxTQUFBLEVBQVMsTUFEVDtBQUFBLFFBRUEsTUFBQSxFQUFNLENBQUMsTUFBRCxFQUFTLE1BQVQsRUFBaUIsTUFBakIsRUFBeUIsTUFBekIsQ0FGTjtPQVJGO0tBZEY7QUFBQSxJQTBCQSxjQUFBLEVBQWdCLFNBQUEsR0FBQTthQUNkLENBQUEsU0FBQSxLQUFBLEdBQUE7ZUFBQSxTQUFDLEtBQUQsR0FBQTtpQkFBZSxJQUFBLGNBQUEsQ0FBZSxLQUFmLEVBQXNCLEtBQUMsQ0FBQSxPQUF2QixFQUFmO1FBQUEsRUFBQTtNQUFBLENBQUEsQ0FBQSxDQUFBLElBQUEsRUFEYztJQUFBLENBMUJoQjtHQUhGLENBQUE7QUFBQSIKfQ==
+
+//# sourceURL=/Users/Rad/.atom/packages/tool-bar/lib/tool-bar.coffee
