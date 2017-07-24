@@ -1,0 +1,61 @@
+(function() {
+  var ConfigManager, child_process, fs, path, portfinder, uuid;
+
+  uuid = require('uuid');
+
+  fs = require('fs');
+
+  path = require('path');
+
+  child_process = require('child_process');
+
+  portfinder = require('./find-port');
+
+  module.exports = ConfigManager = {
+    fileStoragePath: path.join(__dirname, '..', 'kernel-configs'),
+    writeConfigFile: function(onCompleted) {
+      var e, filename;
+      try {
+        fs.mkdirSync(this.fileStoragePath);
+      } catch (_error) {
+        e = _error;
+        if (e.code !== 'EEXIST') {
+          throw e;
+        }
+      }
+      filename = 'kernel-' + uuid.v4() + '.json';
+      return portfinder.findMany(5, (function(_this) {
+        return function(ports) {
+          var config, configString, filepath;
+          config = _this.buildConfiguration(ports);
+          configString = JSON.stringify(config);
+          filepath = path.join(_this.fileStoragePath, filename);
+          fs.writeFileSync(filepath, configString);
+          return onCompleted(filepath, config);
+        };
+      })(this));
+    },
+    buildConfiguration: function(ports) {
+      var config;
+      config = {
+        version: 5,
+        key: uuid.v4(),
+        signature_scheme: 'hmac-sha256',
+        transport: 'tcp',
+        ip: '127.0.0.1',
+        hb_port: ports[0],
+        control_port: ports[1],
+        shell_port: ports[2],
+        stdin_port: ports[3],
+        iopub_port: ports[4]
+      };
+      this.startingPort = this.startingPort + 5;
+      return config;
+    }
+  };
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9oeWRyb2dlbi9saWIvY29uZmlnLW1hbmFnZXIuY29mZmVlIgogIF0sCiAgIm5hbWVzIjogW10sCiAgIm1hcHBpbmdzIjogIkFBQUE7QUFBQSxNQUFBLHdEQUFBOztBQUFBLEVBQUEsSUFBQSxHQUFPLE9BQUEsQ0FBUSxNQUFSLENBQVAsQ0FBQTs7QUFBQSxFQUNBLEVBQUEsR0FBSyxPQUFBLENBQVEsSUFBUixDQURMLENBQUE7O0FBQUEsRUFFQSxJQUFBLEdBQU8sT0FBQSxDQUFRLE1BQVIsQ0FGUCxDQUFBOztBQUFBLEVBR0EsYUFBQSxHQUFnQixPQUFBLENBQVEsZUFBUixDQUhoQixDQUFBOztBQUFBLEVBS0EsVUFBQSxHQUFhLE9BQUEsQ0FBUSxhQUFSLENBTGIsQ0FBQTs7QUFBQSxFQU9BLE1BQU0sQ0FBQyxPQUFQLEdBQWlCLGFBQUEsR0FDYjtBQUFBLElBQUEsZUFBQSxFQUFpQixJQUFJLENBQUMsSUFBTCxDQUFVLFNBQVYsRUFBcUIsSUFBckIsRUFBMkIsZ0JBQTNCLENBQWpCO0FBQUEsSUFFQSxlQUFBLEVBQWlCLFNBQUMsV0FBRCxHQUFBO0FBQ2IsVUFBQSxXQUFBO0FBQUE7QUFDSSxRQUFBLEVBQUUsQ0FBQyxTQUFILENBQWEsSUFBQyxDQUFBLGVBQWQsQ0FBQSxDQURKO09BQUEsY0FBQTtBQUdJLFFBREUsVUFDRixDQUFBO0FBQUEsUUFBQSxJQUFHLENBQUMsQ0FBQyxJQUFGLEtBQVksUUFBZjtBQUNJLGdCQUFNLENBQU4sQ0FESjtTQUhKO09BQUE7QUFBQSxNQUtBLFFBQUEsR0FBVyxTQUFBLEdBQVksSUFBSSxDQUFDLEVBQUwsQ0FBQSxDQUFaLEdBQXdCLE9BTG5DLENBQUE7YUFNQSxVQUFVLENBQUMsUUFBWCxDQUFvQixDQUFwQixFQUF1QixDQUFBLFNBQUEsS0FBQSxHQUFBO2VBQUEsU0FBQyxLQUFELEdBQUE7QUFDbkIsY0FBQSw4QkFBQTtBQUFBLFVBQUEsTUFBQSxHQUFTLEtBQUMsQ0FBQSxrQkFBRCxDQUFvQixLQUFwQixDQUFULENBQUE7QUFBQSxVQUNBLFlBQUEsR0FBZSxJQUFJLENBQUMsU0FBTCxDQUFlLE1BQWYsQ0FEZixDQUFBO0FBQUEsVUFFQSxRQUFBLEdBQVcsSUFBSSxDQUFDLElBQUwsQ0FBVSxLQUFDLENBQUEsZUFBWCxFQUE0QixRQUE1QixDQUZYLENBQUE7QUFBQSxVQUdBLEVBQUUsQ0FBQyxhQUFILENBQWlCLFFBQWpCLEVBQTJCLFlBQTNCLENBSEEsQ0FBQTtpQkFJQSxXQUFBLENBQVksUUFBWixFQUFzQixNQUF0QixFQUxtQjtRQUFBLEVBQUE7TUFBQSxDQUFBLENBQUEsQ0FBQSxJQUFBLENBQXZCLEVBUGE7SUFBQSxDQUZqQjtBQUFBLElBZ0JBLGtCQUFBLEVBQW9CLFNBQUMsS0FBRCxHQUFBO0FBQ2hCLFVBQUEsTUFBQTtBQUFBLE1BQUEsTUFBQSxHQUNJO0FBQUEsUUFBQSxPQUFBLEVBQVMsQ0FBVDtBQUFBLFFBQ0EsR0FBQSxFQUFLLElBQUksQ0FBQyxFQUFMLENBQUEsQ0FETDtBQUFBLFFBRUEsZ0JBQUEsRUFBa0IsYUFGbEI7QUFBQSxRQUdBLFNBQUEsRUFBVyxLQUhYO0FBQUEsUUFJQSxFQUFBLEVBQUksV0FKSjtBQUFBLFFBS0EsT0FBQSxFQUFTLEtBQU0sQ0FBQSxDQUFBLENBTGY7QUFBQSxRQU1BLFlBQUEsRUFBYyxLQUFNLENBQUEsQ0FBQSxDQU5wQjtBQUFBLFFBT0EsVUFBQSxFQUFZLEtBQU0sQ0FBQSxDQUFBLENBUGxCO0FBQUEsUUFRQSxVQUFBLEVBQVksS0FBTSxDQUFBLENBQUEsQ0FSbEI7QUFBQSxRQVNBLFVBQUEsRUFBWSxLQUFNLENBQUEsQ0FBQSxDQVRsQjtPQURKLENBQUE7QUFBQSxNQVlBLElBQUMsQ0FBQSxZQUFELEdBQWdCLElBQUMsQ0FBQSxZQUFELEdBQWdCLENBWmhDLENBQUE7QUFhQSxhQUFPLE1BQVAsQ0FkZ0I7SUFBQSxDQWhCcEI7R0FSSixDQUFBO0FBQUEiCn0=
+
+//# sourceURL=/Users/Rad/.atom/packages/hydrogen/lib/config-manager.coffee

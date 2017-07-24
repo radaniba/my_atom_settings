@@ -1,9 +1,9 @@
-'use babel'
+'use strict'
 
-import _ from 'underscore-plus'
-import Mixin from 'mixto'
-import Main from '../main'
-import CanvasLayer from '../canvas-layer'
+const _ = require('underscore-plus')
+const Mixin = require('mixto')
+const Main = require('../main')
+const CanvasLayer = require('../canvas-layer')
 
 /**
  * The `CanvasDrawer` mixin is responsible for the rendering of a `Minimap`
@@ -12,7 +12,7 @@ import CanvasLayer from '../canvas-layer'
  * This mixin is injected in the `MinimapElement` prototype, so all these
  * methods  are available on any `MinimapElement` instance.
  */
-export default class CanvasDrawer extends Mixin {
+module.exports = class CanvasDrawer extends Mixin {
   /**
    * Initializes the canvas elements needed to perform the `Minimap` rendering.
    */
@@ -187,7 +187,7 @@ export default class CanvasDrawer extends Mixin {
    * @return {string} a CSS color
    */
   getDefaultColor () {
-    const color = this.retrieveStyleFromDom(['.editor'], 'color', false, true)
+    const color = this.retrieveStyleFromDom(['.editor'], 'color', true)
     return this.transparentize(color, this.getTextOpacity())
   }
 
@@ -223,7 +223,7 @@ export default class CanvasDrawer extends Mixin {
 
     if (properties.scope) {
       const scopeString = properties.scope.split(/\s+/)
-      return this.retrieveStyleFromDom(scopeString, 'background-color', false)
+      return this.retrieveStyleFromDom(scopeString, 'background-color')
     } else {
       return this.getDefaultColor()
     }
@@ -300,7 +300,7 @@ export default class CanvasDrawer extends Mixin {
     for (let i = 0, len = ranges.length; i < len; i++) {
       const range = ranges[i]
 
-      method.call(this, currentRow, range.start - 1, currentRow - firstRow)
+      method.call(this, currentRow, range.start, currentRow - firstRow)
 
       currentRow = range.end
     }
@@ -401,6 +401,30 @@ export default class CanvasDrawer extends Mixin {
 
     renderData.context.fill()
   }
+
+  /**
+   * Returns an array of tokens by line.
+   *
+   * @param  {number} startRow The start row
+   * @param  {number} endRow The end row
+   * @return {Array<Array>} An array of tokens by line
+   * @access private
+   */
+  eachTokenForScreenRows (startRow, endRow, callback) {
+    const editor = this.getTextEditor()
+    const invisibleRegExp = this.getInvisibleRegExp()
+    endRow = Math.min(endRow, editor.getScreenLineCount())
+
+    for (let row = startRow; row < endRow; row++) {
+      editor.tokensForScreenRow(row).forEach(token => {
+        callback(row, {
+          text: token.text.replace(invisibleRegExp, ' '),
+          scopes: token.scopes
+        })
+      })
+    }
+  }
+
   /**
    * Draws lines on the corresponding layer.
    *
@@ -417,7 +441,6 @@ export default class CanvasDrawer extends Mixin {
     if (firstRow > lastRow) { return }
 
     const devicePixelRatio = this.minimap.getDevicePixelRatio()
-    const lines = this.getTextEditor().tokenizedLinesForScreenRows(firstRow, lastRow)
     const lineHeight = this.minimap.getLineHeight() * devicePixelRatio
     const charHeight = this.minimap.getCharHeight() * devicePixelRatio
     const charWidth = this.minimap.getCharWidth() * devicePixelRatio
@@ -425,36 +448,29 @@ export default class CanvasDrawer extends Mixin {
     const context = this.tokensLayer.context
     const {width: canvasWidth} = this.tokensLayer.getSize()
 
-    let line = lines[0]
-    const invisibleRegExp = this.getInvisibleRegExp(line)
-
-    for (let i = 0, len = lines.length; i < len; i++) {
-      line = lines[i]
-      const yRow = (offsetRow + i) * lineHeight
-      let x = 0
-
-      if ((line != null ? line.tokens : void 0) != null) {
-        const tokens = line.tokens
-        for (let j = 0, tokensCount = tokens.length; j < tokensCount; j++) {
-          const token = tokens[j]
-          const w = token.screenDelta
-          if (!token.isOnlyWhitespace()) {
-            const color = displayCodeHighlights ? this.getTokenColor(token) : this.getDefaultColor()
-
-            let value = token.value
-            if (invisibleRegExp != null) {
-              value = value.replace(invisibleRegExp, ' ')
-            }
-            x = this.drawToken(context, value, color, x, yRow, charWidth, charHeight)
-          } else {
-            x += w * charWidth
-          }
-
-          if (x > canvasWidth) { break }
-        }
+    let lastLine, x
+    let y = (offsetRow * lineHeight) - lineHeight
+    this.eachTokenForScreenRows(firstRow, lastRow, (line, token) => {
+      if (lastLine !== line) {
+        x = 0
+        y += lineHeight
+        lastLine = line
+        context.clearRect(x, y, canvasWidth, lineHeight)
       }
-    }
+      if (x > canvasWidth) { return }
 
+      if (/^\s+$/.test(token.text)) {
+        x += token.text.length * charWidth
+      } else {
+        const color = displayCodeHighlights
+          ? this.getTokenColor(token)
+          : this.getDefaultColor()
+
+        x = this.drawToken(
+          context, token.text, color, x, y, charWidth, charHeight
+        )
+      }
+    })
     context.fill()
   }
 
@@ -462,23 +478,20 @@ export default class CanvasDrawer extends Mixin {
    * Returns the regexp to replace invisibles substitution characters
    * in editor lines.
    *
-   * @param  {TokenizedLine} line a tokenized lize to read the invisible
-   *                              characters
    * @return {RegExp} the regular expression to match invisible characters
    * @access private
    */
-  getInvisibleRegExp (line) {
-    if ((line != null) && (line.invisibles != null)) {
-      const invisibles = []
-      if (line.invisibles.cr != null) { invisibles.push(line.invisibles.cr) }
-      if (line.invisibles.eol != null) { invisibles.push(line.invisibles.eol) }
-      if (line.invisibles.space != null) { invisibles.push(line.invisibles.space) }
-      if (line.invisibles.tab != null) { invisibles.push(line.invisibles.tab) }
+  getInvisibleRegExp () {
+    let invisibles = this.getTextEditor().getInvisibles()
+    let regexp = []
+    if (invisibles.cr != null) { regexp.push(invisibles.cr) }
+    if (invisibles.eol != null) { regexp.push(invisibles.eol) }
+    if (invisibles.space != null) { regexp.push(invisibles.space) }
+    if (invisibles.tab != null) { regexp.push(invisibles.tab) }
 
-      return RegExp(invisibles.filter((s) => {
-        return typeof s === 'string'
-      }).map(_.escapeRegExp).join('|'), 'g')
-    }
+    return regexp.length === 0 ? null : RegExp(regexp.filter((s) => {
+      return typeof s === 'string'
+    }).map(_.escapeRegExp).join('|'), 'g')
   }
 
   /**
@@ -539,6 +552,11 @@ export default class CanvasDrawer extends Mixin {
    */
   drawDecorations (screenRow, decorations, renderData, types) {
     let decorationsToRender = []
+
+    renderData.context.clearRect(
+      0, renderData.yRow,
+      renderData.canvasWidth, renderData.lineHeight
+    )
 
     for (let i in types) {
       decorationsToRender = decorationsToRender.concat(

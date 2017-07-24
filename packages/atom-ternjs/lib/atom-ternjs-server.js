@@ -1,37 +1,51 @@
-"use babel";
+'use babel';
 
-let fs = require('fs');
-let path = require('path');
-let glob = require('glob');
-let minimatch = require('minimatch');
-let uuid = require('node-uuid');
+import manager from './atom-ternjs-manager';
+import {fileExists} from './atom-ternjs-helper';
+import fs from 'fs';
+import path from 'path';
+import glob from 'glob';
+import cp from 'child_process';
+import minimatch from 'minimatch';
+import uuid from 'node-uuid';
+import resolveFrom from 'resolve-from';
+import packageConfig from './atom-ternjs-package-config';
+import {defaultServerConfig} from '../config/tern-config';
+
+import {
+  clone
+} from 'underscore-plus';
+
+const maxPendingRequests = 50;
 
 export default class Server {
 
-  constructor(projectRoot, client, manager) {
+  constructor(projectRoot, client) {
 
-    this.manager = manager;
     this.client = client;
 
+    this.child = null;
+
     this.resolves = {};
+    this.rejects = {};
+
+    this.pendingRequest = 0;
 
     this.projectDir = projectRoot;
     this.distDir = path.resolve(__dirname, '../node_modules/tern');
 
-    this.defaultConfig = {
+    this.defaultConfig = clone(defaultServerConfig);
 
-      libs: [],
-      loadEagerly: false,
-      plugins: {},
-      ecmaScript: true,
-      ecmaVersion: 6,
-      dependencyBudget: 20000
-    };
+    const homeDir = process.env.HOME || process.env.USERPROFILE;
+
+    if (homeDir && fs.existsSync(path.resolve(homeDir, '.tern-config'))) {
+
+      this.defaultConfig = this.readProjectFile(path.resolve(homeDir, '.tern-config'));
+    }
 
     this.projectFileName = '.tern-project';
     this.disableLoadingLocal = false;
 
-    this.getHomeDir();
     this.init();
   }
 
@@ -49,6 +63,14 @@ export default class Server {
       this.config = this.defaultConfig;
     }
 
+    this.config.async = packageConfig.options.ternServerGetFileAsync;
+    this.config.dependencyBudget = packageConfig.options.ternServerDependencyBudget;
+
+    if (!this.config.plugins['doc_comment']) {
+
+      this.config.plugins['doc_comment'] = true;
+    }
+
     let defs = this.findDefs(this.projectDir, this.config);
     let plugins = this.loadPlugins(this.projectDir, this.config);
     let files = [];
@@ -64,10 +86,11 @@ export default class Server {
       });
     }
 
-    this.worker = new Worker(path.resolve(__dirname, './atom-ternjs-server-worker.js'));
-    this.worker.onmessage = this.onWorkerMessage.bind(this);
-
-    this.worker.postMessage({
+    this.child = cp.fork(path.resolve(__dirname, './atom-ternjs-server-worker.js'));
+    this.child.on('message', this.onWorkerMessage.bind(this));
+    this.child.on('error', this.onError);
+    this.child.on('disconnect', this.onDisconnect);
+    this.child.send({
 
       type: 'init',
       dir: this.projectDir,
@@ -78,15 +101,35 @@ export default class Server {
     });
   }
 
+  onError(e) {
+
+    this.restart(`Child process error: ${e}`);
+  }
+
+  onDisconnect() {
+
+    console.warn('child process disconnected.');
+  }
+
   request(type, data) {
 
+    if (this.pendingRequest >= maxPendingRequests) {
+
+      this.restart('Max number of pending requests reached. Restarting server...');
+
+      return;
+    }
+
     let requestID = uuid.v1();
+
+    this.pendingRequest++;
 
     return new Promise((resolve, reject) => {
 
       this.resolves[requestID] = resolve;
+      this.rejects[requestID] = reject;
 
-      this.worker.postMessage({
+      this.child.send({
 
         type: type,
         id: requestID,
@@ -99,7 +142,7 @@ export default class Server {
 
     this.request('flush', {}).then(() => {
 
-      atom.notifications.addInfo('All files fetched an analyzed.');
+      atom.notifications.addInfo('All files fetched and analyzed.');
     });
   }
 
@@ -116,63 +159,81 @@ export default class Server {
     });
   }
 
+  restart(message) {
+
+    atom.notifications.addError(message || 'Restarting Server...', {
+
+      dismissable: false
+    });
+
+    manager.destroyServer(this.projectDir);
+    manager.startServer(this.projectDir);
+  }
+
   onWorkerMessage(e) {
 
-    if (!e.data.type) {
+    if (e.error && e.error.isUncaughtException) {
 
-      this.resolves[e.data.id](e.data.data);
-      delete(this.resolves[e.data.id]);
+      this.restart(`UncaughtException: ${e.error.message}. Restarting Server...`);
 
       return;
     }
 
-    if (e.data.type === 'getFile') {
+    const isError = e.error !== 'null' && e.error !== 'undefined';
+    const id = e.id;
 
-      let result;
+    if (!id) {
 
-      if (this.dontLoad(e.data.name)) {
+      console.error('no id given', e);
 
-        this.worker.postMessage({
-
-          type: 'pending',
-          id: e.data.id,
-          data: [null, '']
-        });
-
-      } else {
-
-        fs.readFile(path.resolve(this.projectDir, e.data.name), 'utf8', (err, data) => {
-
-          this.worker.postMessage({
-
-            type: 'pending',
-            id: e.data.id,
-            data: [String(err), data]
-          });
-        });
-      }
+      return;
     }
+
+    if (isError) {
+
+      this.rejects[id] && this.rejects[id](e.error);
+
+    } else {
+
+      this.resolves[id] && this.resolves[id](e.data);
+    }
+
+    delete this.resolves[id];
+    delete this.rejects[id];
+
+    this.pendingRequest--;
   }
 
   destroy() {
 
-    this.worker.terminate();
-    this.worker = undefined;
-  }
+    if (!this.child) {
 
-  getHomeDir() {
+      return;
+    }
 
-    let homeDir = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+    for (const key in this.rejects) {
 
-    if (homeDir && fs.existsSync(path.resolve(homeDir, '.tern-config'))) {
+      this.rejects[key]('Server is being destroyed. Rejecting.');
+    }
 
-      this.defaultConfig = this.readProjectFile(path.resolve(homeDir, '.tern-config'));
+    this.resolves = {};
+    this.rejects = {};
+
+    this.pendingRequest = 0;
+
+    try {
+
+      this.child.disconnect();
+
+    } catch (error) {
+
+      console.error(error);
     }
   }
 
   readJSON(fileName) {
 
-    if (this.manager.helper.fileExists(fileName) !== undefined) {
+    if (fileExists(fileName) !== undefined) {
 
       return false;
     }
@@ -185,12 +246,40 @@ export default class Server {
 
     } catch (e) {
 
-      atom.notifications.addError(`Bad JSON in ${fileName}: ${e.message}`, {
+      atom.notifications.addError(
+        `Bad JSON in ${fileName}: ${e.message}. Please restart atom after the file is fixed. This issue isn't fully covered yet.`,
+        { dismissable: true }
+      );
 
-        dismissable: true
-      });
-      this.destroy();
+      manager.destroyServer(this.projectDir);
     }
+  }
+
+  mergeObjects(base, value) {
+
+    if (!base) {
+
+      return value;
+    }
+
+    if (!value) {
+
+      return base;
+    }
+
+    let result = {};
+
+    for (const prop in base) {
+
+      result[prop] = base[prop];
+    }
+
+    for (const prop in value) {
+
+      result[prop] = value[prop];
+    }
+
+    return result;
   }
 
   readProjectFile(fileName) {
@@ -202,8 +291,18 @@ export default class Server {
       return false;
     }
 
-    for (var option in this.defaultConfig) if (!data.hasOwnProperty(option))
-      data[option] = this.defaultConfig[option];
+    for (var option in this.defaultConfig) {
+
+      if (!data.hasOwnProperty(option)) {
+
+        data[option] = this.defaultConfig[option];
+
+      } else if (option === 'plugins') {
+
+        data[option] = this.mergeObjects(this.defaultConfig[option], data[option]);
+      }
+    }
+
     return data;
   }
 
@@ -229,17 +328,9 @@ export default class Server {
     let defs = [];
     let src = config.libs.slice();
 
-    if (config.ecmaScript) {
+    if (config.ecmaScript && src.indexOf('ecmascript') === -1) {
 
-      if (src.indexOf('ecma6') == -1 && config.ecmaVersion >= 6) {
-
-        src.unshift('ecma6');
-      }
-
-      if (src.indexOf('ecma5') == -1) {
-
-        src.unshift('ecma5');
-      }
+      src.unshift('ecmascript');
     }
 
     for (var i = 0; i < src.length; ++i) {
@@ -251,7 +342,10 @@ export default class Server {
         file = `${file}.json`;
       }
 
-      let found = this.findFile(file, projectDir, path.resolve(this.distDir, 'defs'));
+      let found =
+        this.findFile(file, projectDir, path.resolve(this.distDir, 'defs')) ||
+        resolveFrom(projectDir, `tern-${src[i]}`)
+        ;
 
       if (!found) {
 
@@ -274,13 +368,8 @@ export default class Server {
         defs.push(this.readJSON(found));
       }
     }
+
     return defs;
-  }
-
-  defaultPlugins(config) {
-
-    let result = ['doc_comment'];
-    return result;
   }
 
   loadPlugins(projectDir, config) {
@@ -298,7 +387,10 @@ export default class Server {
         continue;
       }
 
-      let found = this.findFile(`${plugin}.js`, projectDir, path.resolve(this.distDir, 'plugin'));
+      let found =
+        this.findFile(`${plugin}.js`, projectDir, path.resolve(this.distDir, 'plugin')) ||
+        resolveFrom(projectDir, `tern-${plugin}`)
+        ;
 
       if (!found) {
 
@@ -306,7 +398,10 @@ export default class Server {
 
           found = require.resolve(`tern-${plugin}`);
 
-        } catch(e) {}
+        } catch (e) {
+
+          console.warn(e);
+        }
       }
 
       if (!found) {
@@ -328,14 +423,6 @@ export default class Server {
       this.config.pluginImports.push(found);
       options[path.basename(plugin)] = val;
     }
-
-    this.defaultPlugins(config).forEach((name) => {
-
-      if (!plugins.hasOwnProperty(name)) {
-
-        options[name] = true;
-      }
-    });
 
     return options;
   }

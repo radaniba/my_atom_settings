@@ -1,0 +1,21 @@
+'use babel';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+var messages = {
+
+  noURI: 'No URI found for the given editor.'
+};
+
+exports.messages = messages;
+function handleReject(type, message) {
+
+  console[type] && console[type]('atom-ternjs: ' + message);
+}
+
+exports['default'] = {
+
+  handleReject: handleReject
+};
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9SYWQvLmF0b20vcGFja2FnZXMvYXRvbS10ZXJuanMvbGliL3NlcnZpY2VzL2RlYnVnLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBLFdBQVcsQ0FBQzs7Ozs7QUFFTCxJQUFNLFFBQVEsR0FBRzs7QUFFdEIsT0FBSyxFQUFFLG9DQUFvQztDQUM1QyxDQUFDOzs7QUFFRixTQUFTLFlBQVksQ0FBQyxJQUFJLEVBQUUsT0FBTyxFQUFFOztBQUVuQyxTQUFPLENBQUMsSUFBSSxDQUFDLElBQUksT0FBTyxDQUFDLElBQUksQ0FBQyxtQkFBaUIsT0FBTyxDQUFHLENBQUM7Q0FDM0Q7O3FCQUVjOztBQUViLGNBQVksRUFBWixZQUFZO0NBQ2IiLCJmaWxlIjoiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9hdG9tLXRlcm5qcy9saWIvc2VydmljZXMvZGVidWcuanMiLCJzb3VyY2VzQ29udGVudCI6WyIndXNlIGJhYmVsJztcblxuZXhwb3J0IGNvbnN0IG1lc3NhZ2VzID0ge1xuXG4gIG5vVVJJOiAnTm8gVVJJIGZvdW5kIGZvciB0aGUgZ2l2ZW4gZWRpdG9yLidcbn07XG5cbmZ1bmN0aW9uIGhhbmRsZVJlamVjdCh0eXBlLCBtZXNzYWdlKSB7XG5cbiAgY29uc29sZVt0eXBlXSAmJiBjb25zb2xlW3R5cGVdKGBhdG9tLXRlcm5qczogJHttZXNzYWdlfWApO1xufVxuXG5leHBvcnQgZGVmYXVsdCB7XG5cbiAgaGFuZGxlUmVqZWN0XG59O1xuIl19

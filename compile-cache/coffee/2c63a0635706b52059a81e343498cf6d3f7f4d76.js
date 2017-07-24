@@ -1,0 +1,12 @@
+(function() {
+  var treeAdapters;
+
+  treeAdapters = require('parse5').treeAdapters;
+
+  module.exports = treeAdapters.htmlparser2;
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy90aWR5LW1hcmtkb3duL25vZGVfbW9kdWxlcy90aWR5LW1hcmtkb3duL2xpYi90cmVlLWFkYXB0ZXIuY29mZmVlIgogIF0sCiAgIm5hbWVzIjogW10sCiAgIm1hcHBpbmdzIjogIkFBQUE7QUFBQSxNQUFBLFlBQUE7O0FBQUEsRUFBQyxlQUFnQixPQUFBLENBQVEsUUFBUixFQUFoQixZQUFELENBQUE7O0FBQUEsRUFFQSxNQUFNLENBQUMsT0FBUCxHQUFpQixZQUFZLENBQUMsV0FGOUIsQ0FBQTtBQUFBIgp9
+
+//# sourceURL=/Users/Rad/.atom/packages/tidy-markdown/node_modules/tidy-markdown/lib/tree-adapter.coffee

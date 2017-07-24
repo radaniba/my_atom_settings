@@ -1,0 +1,1 @@
+{"source":".auto-cursor {\n  cursor: default;\n}\n.highlight-green .region {\n  background-color: #43d08a;\n}\n.highlight-blue .region {\n  background-color: #33a0ff;\n}\n.highlight-red .region {\n  background-color: #e05252;\n}\n"}

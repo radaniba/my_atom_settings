@@ -2,6 +2,8 @@ fs = require 'fs'
 path = require 'path'
 yaml = require 'js-yaml'
 
+latinize = require 'latinize'
+
 module.exports =
   Main: null
 
@@ -28,6 +30,7 @@ module.exports =
       process.jekyllAtom.config.data_dir = './_data' unless process.jekyllAtom.config.data_dir
       process.jekyllAtom.config.destination = './_site' unless process.jekyllAtom.config.destination
       process.jekyllAtom.config.source = '.' unless process.jekyllAtom.config.source
+      process.jekyllAtom.config.postFileType = '.markdown' unless process.jekyllAtom.config.postFileType
 
       unless process.jekyllAtom.config.atom
         process.jekyllAtom.config.atom = {}
@@ -46,7 +49,8 @@ module.exports =
       @Main.Emitter.emit 'config-loaded', process.jekyllAtom.config
 
   generateFileName: (title) ->
-    titleString = title.toLowerCase().replace(/[^\w\s]|_/g, "").replace(RegExp(" ", 'g'),"-")
+    title = latinize(title)
+    titleString = encodeURI title.toLowerCase().replace(/[^\w\s\u0080-\uFFFF]|_/g, "").replace(RegExp(" ", 'g'),"-")
     return @generateDateString() + '-' + titleString
 
   generateDateString: (currentTime = new Date(), showTime = false) ->

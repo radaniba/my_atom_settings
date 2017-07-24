@@ -21,8 +21,8 @@ module.exports =
         indentation = IndentationManager.autoDetectIndentation editor
         IndentationManager.setIndentation editor, indentation, true
 
-    if editor.displayBuffer?.onDidTokenize
-      onTokenizeDisposable = editor.displayBuffer.onDidTokenize =>
+    if editor.buffer?.onDidTokenize
+      onTokenizeDisposable = editor.buffer.onDidTokenize =>
         # This event fires when the grammar is first loaded.
         # We re-analyze the file's indentation, in order to ignore indentation inside comments
         @_attach editor
@@ -51,18 +51,23 @@ module.exports =
     indentationStatusView.attach()
 
   _attach: (editor) ->
+    originalSetSoftTabs = editor.setSoftTabs
+    originalSetTabLength = editor.setTabLength
+
     # Disable atom's native detection of spaces/tabs
     editor.shouldUseSoftTabs = ->
       @softTabs
 
     # Trigger "did-change-indentation" event when indentation is changed
     editor.setSoftTabs = (@softTabs) ->
+      # another line
+      value = originalSetSoftTabs.call(editor, @softTabs)
       @emitter.emit 'did-change-indentation'
-      @softTabs
+      value
 
     # Trigger "did-change-indentation" event when indentation is changed
     editor.setTabLength = (tabLength) ->
-      value = @displayBuffer.setTabLength(tabLength)
+      value = originalSetTabLength.call(editor, tabLength)
       @emitter.emit 'did-change-indentation'
       value
 

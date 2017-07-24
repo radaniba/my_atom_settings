@@ -17,6 +17,8 @@
   - `x-temp` → `<script type="text/x-handlebars" data-template-name="$1">` (inline script tag in HTML files using the Ember recommended `data-template-name` attribute)
   - `x-id` → `<script type="text/x-handlebars-template" id="$1">` (inline script tag in HTML files using the legacy `id` attribute)
 
+Since (as of February 2017) the syntax definitions in this repository are driving the highlights on [Github](https://github.com/github/linguist/blob/76d41697aaed6e0354202dd94e07d646c82dfe61/vendor/README.md) and in [Visual Studio Code](https://github.com/Microsoft/vscode/tree/a70621b5a18d6606fffecc05efdcd96463ff0f7f/extensions/handlebars), it's fair game to open issues related to either of these 😺
+
 ## About Handlebars.js
 
 It's a great JavaScript templating engine, based on [Mustache](http://mustache.github.com/), but amongst others adding the ability to precompile templates and to create custom helpers.
@@ -78,7 +80,7 @@ There are some sample templates in `test/` folder. It's possible to see the diff
 
 ### Sublime Text
 
-If you want to work on the package you should install AAAPackageDev either [from Github](https://github.com/SublimeText/AAAPackageDev) or from Package Control. With that you can edit the JSON version (`grammars/Handlebars.json`) and let it export the Plist (`grammars/Handlebars.tmLanguage`) with the ST Build System.
+If you want to work on the package you should install PackageDev either [from Github](https://github.com/SublimeText/PackageDev) or from Package Control. With that you can edit the JSON version (`grammars/Handlebars.json`) and let it export the Plist (`grammars/Handlebars.tmLanguage`) with the ST Build System.
 
 The nicest development setup I found so far is to have the package installed via Package Control and then symlinking the development Git repo to `Sublime settings folder > Packages`, which then overrides the installed one so you can toggle between them easily.
 
@@ -94,7 +96,7 @@ http://manual.macromates.com/en/language_grammars
 To see what scope Atom detects under the keyboard cursor, press <kbd>Option</kbd> + <kbd>Cmd</kbd> + <kbd>P</kbd>.
 
 TODO: add contribution notes  
-TODO: add proper testing based on https://github.com/atom/language-mustache
+TODO: add proper testing based on specs in https://github.com/atom/language-mustache and https://github.com/Sneagan/atom-handlebars
 
 ## Precompilation
 
@@ -108,7 +110,7 @@ There are of course Node.js / Grunt / Gulp based compilers too ([like this](http
 
 Adapted from the great [sublime-text-handlebars](https://github.com/nrw/sublime-text-handlebars) package by Nicholas Westlake.
 
-Thanks a lot to all the generous contributors (in alphabetical order): @bittersweetryan, @bradcliffe, @calumbrodie, @duncanbeevers, @hlvnst, @jonschlinkert, @Krutius, @samselikoff, @utkarshkukreti, @zeppelin
+Thanks a lot to all the [generous contributors](https://github.com/daaain/Handlebars/graphs/contributors)!
 
 ## License
 

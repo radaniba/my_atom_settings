@@ -1,7 +1,7 @@
 {
   "name": "minimap-cursorline",
   "main": "./lib/minimap-cursorline",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Displays Atom cursorline in the minimap",
   "repository": {
     "type": "git",
@@ -29,10 +29,10 @@
     "url": "https://github.com/atom-minimap/minimap-cursorline/issues"
   },
   "homepage": "https://github.com/atom-minimap/minimap-cursorline#readme",
-  "_id": "minimap-cursorline@0.1.0",
-  "_shasum": "b4766cf95cf04acd70c14ba8e5ca9ff1356ffecd",
-  "_resolved": "file:../d-11615-65633-wz6j3g/package.tgz",
-  "_from": "../d-11615-65633-wz6j3g/package.tgz",
+  "_id": "minimap-cursorline@0.2.0",
+  "_shasum": "e453900a4e932f1aa23b34a850b19d8cca186207",
+  "_resolved": "file:../d-116516-97550-16mbdhs/package.tgz",
+  "_from": "../d-116516-97550-16mbdhs/package.tgz",
   "_atomModuleCache": {
     "version": 1,
     "dependencies": [],

@@ -1,0 +1,36 @@
+(function() {
+  var Emitter, Utils, path;
+
+  Emitter = require('atom').Emitter;
+
+  path = require('path');
+
+  Utils = require('../lib/jekyll/utils');
+
+  describe('Utils', function() {
+    beforeEach(function() {
+      return atom.project.setPaths([path.join(__dirname, 'sample')]);
+    });
+    it('should get the config', function(done) {
+      var Main;
+      Main = {
+        Emitter: new Emitter()
+      };
+      Main.Emitter.on('config-loaded', function() {
+        return done();
+      });
+      return Utils.getConfigFromSite();
+    });
+    return it('should take files with none latin characters', function() {
+      var fileName, string;
+      string = "J'ai aimé allé à l'aéroport";
+      fileName = Utils.generateFileName(string);
+      return expect(fileName).toBe(Utils.generateDateString() + "-jai-aime-alle-a-laeroport");
+    });
+  });
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9qZWt5bGwvc3BlYy91dGlscy1zcGVjLmNvZmZlZSIKICBdLAogICJuYW1lcyI6IFtdLAogICJtYXBwaW5ncyI6ICJBQUFBO0FBQUEsTUFBQSxvQkFBQTs7QUFBQSxFQUFDLFVBQVcsT0FBQSxDQUFRLE1BQVIsRUFBWCxPQUFELENBQUE7O0FBQUEsRUFDQSxJQUFBLEdBQU8sT0FBQSxDQUFRLE1BQVIsQ0FEUCxDQUFBOztBQUFBLEVBR0EsS0FBQSxHQUFRLE9BQUEsQ0FBUSxxQkFBUixDQUhSLENBQUE7O0FBQUEsRUFLQSxRQUFBLENBQVMsT0FBVCxFQUFrQixTQUFBLEdBQUE7QUFDaEIsSUFBQSxVQUFBLENBQVcsU0FBQSxHQUFBO2FBQ1QsSUFBSSxDQUFDLE9BQU8sQ0FBQyxRQUFiLENBQXNCLENBQUMsSUFBSSxDQUFDLElBQUwsQ0FBVSxTQUFWLEVBQXFCLFFBQXJCLENBQUQsQ0FBdEIsRUFEUztJQUFBLENBQVgsQ0FBQSxDQUFBO0FBQUEsSUFHQSxFQUFBLENBQUcsdUJBQUgsRUFBNEIsU0FBQyxJQUFELEdBQUE7QUFDMUIsVUFBQSxJQUFBO0FBQUEsTUFBQSxJQUFBLEdBQU87QUFBQSxRQUNMLE9BQUEsRUFBYSxJQUFBLE9BQUEsQ0FBQSxDQURSO09BQVAsQ0FBQTtBQUFBLE1BSUEsSUFBSSxDQUFDLE9BQU8sQ0FBQyxFQUFiLENBQWdCLGVBQWhCLEVBQWlDLFNBQUEsR0FBQTtlQUMvQixJQUFBLENBQUEsRUFEK0I7TUFBQSxDQUFqQyxDQUpBLENBQUE7YUFPQSxLQUFLLENBQUMsaUJBQU4sQ0FBQSxFQVIwQjtJQUFBLENBQTVCLENBSEEsQ0FBQTtXQWFBLEVBQUEsQ0FBRyw4Q0FBSCxFQUFtRCxTQUFBLEdBQUE7QUFDakQsVUFBQSxnQkFBQTtBQUFBLE1BQUEsTUFBQSxHQUFTLDZCQUFULENBQUE7QUFBQSxNQUNBLFFBQUEsR0FBVyxLQUFLLENBQUMsZ0JBQU4sQ0FBdUIsTUFBdkIsQ0FEWCxDQUFBO2FBRUEsTUFBQSxDQUFPLFFBQVAsQ0FBZ0IsQ0FBQyxJQUFqQixDQUFzQixLQUFLLENBQUMsa0JBQU4sQ0FBQSxDQUFBLEdBQTZCLDRCQUFuRCxFQUhpRDtJQUFBLENBQW5ELEVBZGdCO0VBQUEsQ0FBbEIsQ0FMQSxDQUFBO0FBQUEiCn0=
+
+//# sourceURL=/Users/Rad/.atom/packages/jekyll/spec/utils-spec.coffee

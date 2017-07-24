@@ -1,0 +1,46 @@
+(function() {
+  var OutputViewManager, git, notifier;
+
+  git = require('../git');
+
+  notifier = require('../notifier');
+
+  OutputViewManager = require('../output-view-manager');
+
+  module.exports = function(repo, _arg) {
+    var branch, extraArgs, remote;
+    remote = _arg.remote, branch = _arg.branch, extraArgs = _arg.extraArgs;
+    return new Promise(function(resolve, reject) {
+      var args, startMessage, view;
+      view = OutputViewManager.create();
+      startMessage = notifier.addInfo("Pulling...", {
+        dismissable: true
+      });
+      args = ['pull'].concat(extraArgs).concat([remote, branch]).filter(function(c) {
+        return c !== '' && c !== void 0;
+      });
+      return git.cmd(args, {
+        cwd: repo.getWorkingDirectory()
+      }, {
+        color: true
+      }).then((function(_this) {
+        return function(data) {
+          resolve();
+          view.setContent(data).finish();
+          return startMessage.dismiss();
+        };
+      })(this))["catch"]((function(_this) {
+        return function(error) {
+          reject();
+          view.setContent(error).finish();
+          return startMessage.dismiss();
+        };
+      })(this));
+    });
+  };
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9naXQtcGx1cy9saWIvbW9kZWxzL19wdWxsLmNvZmZlZSIKICBdLAogICJuYW1lcyI6IFtdLAogICJtYXBwaW5ncyI6ICJBQUFBO0FBQUEsTUFBQSxnQ0FBQTs7QUFBQSxFQUFBLEdBQUEsR0FBTSxPQUFBLENBQVEsUUFBUixDQUFOLENBQUE7O0FBQUEsRUFDQSxRQUFBLEdBQVcsT0FBQSxDQUFRLGFBQVIsQ0FEWCxDQUFBOztBQUFBLEVBRUEsaUJBQUEsR0FBb0IsT0FBQSxDQUFRLHdCQUFSLENBRnBCLENBQUE7O0FBQUEsRUFJQSxNQUFNLENBQUMsT0FBUCxHQUFpQixTQUFDLElBQUQsRUFBTyxJQUFQLEdBQUE7QUFDZixRQUFBLHlCQUFBO0FBQUEsSUFEdUIsY0FBQSxRQUFRLGNBQUEsUUFBUSxpQkFBQSxTQUN2QyxDQUFBO1dBQUksSUFBQSxPQUFBLENBQVEsU0FBQyxPQUFELEVBQVUsTUFBVixHQUFBO0FBQ1YsVUFBQSx3QkFBQTtBQUFBLE1BQUEsSUFBQSxHQUFPLGlCQUFpQixDQUFDLE1BQWxCLENBQUEsQ0FBUCxDQUFBO0FBQUEsTUFDQSxZQUFBLEdBQWUsUUFBUSxDQUFDLE9BQVQsQ0FBaUIsWUFBakIsRUFBK0I7QUFBQSxRQUFBLFdBQUEsRUFBYSxJQUFiO09BQS9CLENBRGYsQ0FBQTtBQUFBLE1BRUEsSUFBQSxHQUFPLENBQUMsTUFBRCxDQUFRLENBQUMsTUFBVCxDQUFnQixTQUFoQixDQUEwQixDQUFDLE1BQTNCLENBQWtDLENBQUMsTUFBRCxFQUFTLE1BQVQsQ0FBbEMsQ0FBbUQsQ0FBQyxNQUFwRCxDQUEyRCxTQUFDLENBQUQsR0FBQTtlQUFPLENBQUEsS0FBTyxFQUFQLElBQWMsQ0FBQSxLQUFPLE9BQTVCO01BQUEsQ0FBM0QsQ0FGUCxDQUFBO2FBR0EsR0FBRyxDQUFDLEdBQUosQ0FBUSxJQUFSLEVBQWM7QUFBQSxRQUFBLEdBQUEsRUFBSyxJQUFJLENBQUMsbUJBQUwsQ0FBQSxDQUFMO09BQWQsRUFBK0M7QUFBQSxRQUFDLEtBQUEsRUFBTyxJQUFSO09BQS9DLENBQ0EsQ0FBQyxJQURELENBQ00sQ0FBQSxTQUFBLEtBQUEsR0FBQTtlQUFBLFNBQUMsSUFBRCxHQUFBO0FBQ0osVUFBQSxPQUFBLENBQUEsQ0FBQSxDQUFBO0FBQUEsVUFDQSxJQUFJLENBQUMsVUFBTCxDQUFnQixJQUFoQixDQUFxQixDQUFDLE1BQXRCLENBQUEsQ0FEQSxDQUFBO2lCQUVBLFlBQVksQ0FBQyxPQUFiLENBQUEsRUFISTtRQUFBLEVBQUE7TUFBQSxDQUFBLENBQUEsQ0FBQSxJQUFBLENBRE4sQ0FLQSxDQUFDLE9BQUQsQ0FMQSxDQUtPLENBQUEsU0FBQSxLQUFBLEdBQUE7ZUFBQSxTQUFDLEtBQUQsR0FBQTtBQUNMLFVBQUEsTUFBQSxDQUFBLENBQUEsQ0FBQTtBQUFBLFVBQ0EsSUFBSSxDQUFDLFVBQUwsQ0FBZ0IsS0FBaEIsQ0FBc0IsQ0FBQyxNQUF2QixDQUFBLENBREEsQ0FBQTtpQkFFQSxZQUFZLENBQUMsT0FBYixDQUFBLEVBSEs7UUFBQSxFQUFBO01BQUEsQ0FBQSxDQUFBLENBQUEsSUFBQSxDQUxQLEVBSlU7SUFBQSxDQUFSLEVBRFc7RUFBQSxDQUpqQixDQUFBO0FBQUEiCn0=
+
+//# sourceURL=/Users/Rad/.atom/packages/git-plus/lib/models/_pull.coffee

@@ -13,4 +13,4 @@
 #   if path.extname(editor.getPath()) is '.md'
 #     editor.setSoftWrap(true)
 
-process.env.PATH = process.env.PATH + '/usr/local/bin/jupyter'
+process.env.PATH = process.env.PATH + '/Users/Rad/anaconda2/bin/jupyter'

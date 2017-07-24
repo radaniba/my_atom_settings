@@ -1,0 +1,36 @@
+(function() {
+  var fs, os, path, uuid;
+
+  os = require('os');
+
+  fs = require('fs');
+
+  path = require('path');
+
+  uuid = require('node-uuid');
+
+  module.exports = {
+    tempFilesDir: path.join(os.tmpdir(), 'atom_script_tempfiles'),
+    createTempFileWithCode: function(code) {
+      var error, file, tempFilePath;
+      try {
+        if (!fs.existsSync(this.tempFilesDir)) {
+          fs.mkdirSync(this.tempFilesDir);
+        }
+        tempFilePath = this.tempFilesDir + path.sep + 'm' + uuid.v1().split('-').join('_') + '.d';
+        file = fs.openSync(tempFilePath, 'w');
+        fs.writeSync(file, code);
+        fs.closeSync(file);
+        return tempFilePath;
+      } catch (_error) {
+        error = _error;
+        throw "Error while creating temporary file (" + error + ")";
+      }
+    }
+  };
+
+}).call(this);
+
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAiZmlsZSI6ICIiLAogICJzb3VyY2VSb290IjogIiIsCiAgInNvdXJjZXMiOiBbCiAgICAiL1VzZXJzL1JhZC8uYXRvbS9wYWNrYWdlcy9zY3JpcHQvbGliL2dyYW1tYXItdXRpbHMvZC5jb2ZmZWUiCiAgXSwKICAibmFtZXMiOiBbXSwKICAibWFwcGluZ3MiOiAiQUFDQTtBQUFBLE1BQUEsa0JBQUE7O0FBQUEsRUFBQSxFQUFBLEdBQUssT0FBQSxDQUFRLElBQVIsQ0FBTCxDQUFBOztBQUFBLEVBQ0EsRUFBQSxHQUFLLE9BQUEsQ0FBUSxJQUFSLENBREwsQ0FBQTs7QUFBQSxFQUVBLElBQUEsR0FBTyxPQUFBLENBQVEsTUFBUixDQUZQLENBQUE7O0FBQUEsRUFHQSxJQUFBLEdBQU8sT0FBQSxDQUFRLFdBQVIsQ0FIUCxDQUFBOztBQUFBLEVBTUEsTUFBTSxDQUFDLE9BQVAsR0FDRTtBQUFBLElBQUEsWUFBQSxFQUFjLElBQUksQ0FBQyxJQUFMLENBQVUsRUFBRSxDQUFDLE1BQUgsQ0FBQSxDQUFWLEVBQXVCLHVCQUF2QixDQUFkO0FBQUEsSUFPQSxzQkFBQSxFQUF3QixTQUFDLElBQUQsR0FBQTtBQUN0QixVQUFBLHlCQUFBO0FBQUE7QUFDRSxRQUFBLElBQUEsQ0FBQSxFQUFxQyxDQUFDLFVBQUgsQ0FBYyxJQUFDLENBQUEsWUFBZixDQUFuQztBQUFBLFVBQUEsRUFBRSxDQUFDLFNBQUgsQ0FBYSxJQUFDLENBQUEsWUFBZCxDQUFBLENBQUE7U0FBQTtBQUFBLFFBRUEsWUFBQSxHQUFlLElBQUMsQ0FBQSxZQUFELEdBQWdCLElBQUksQ0FBQyxHQUFyQixHQUEyQixHQUEzQixHQUFpQyxJQUFJLENBQUMsRUFBTCxDQUFBLENBQVMsQ0FBQyxLQUFWLENBQWdCLEdBQWhCLENBQW9CLENBQUMsSUFBckIsQ0FBMEIsR0FBMUIsQ0FBakMsR0FBbUUsSUFGbEYsQ0FBQTtBQUFBLFFBSUEsSUFBQSxHQUFPLEVBQUUsQ0FBQyxRQUFILENBQVksWUFBWixFQUEwQixHQUExQixDQUpQLENBQUE7QUFBQSxRQUtBLEVBQUUsQ0FBQyxTQUFILENBQWEsSUFBYixFQUFtQixJQUFuQixDQUxBLENBQUE7QUFBQSxRQU1BLEVBQUUsQ0FBQyxTQUFILENBQWEsSUFBYixDQU5BLENBQUE7ZUFRQSxhQVRGO09BQUEsY0FBQTtBQVdFLFFBREksY0FDSixDQUFBO0FBQUEsY0FBUSx1Q0FBQSxHQUF1QyxLQUF2QyxHQUE2QyxHQUFyRCxDQVhGO09BRHNCO0lBQUEsQ0FQeEI7R0FQRixDQUFBO0FBQUEiCn0=
+
+//# sourceURL=/Users/Rad/.atom/packages/script/lib/grammar-utils/d.coffee

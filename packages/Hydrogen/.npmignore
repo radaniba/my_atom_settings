@@ -4,3 +4,5 @@ node_modules
 .ipynb_checkpoints
 *.ipynb
 kernel-configs/
+types/
+flow-typed/

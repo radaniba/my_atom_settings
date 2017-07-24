@@ -1,17 +1,61 @@
 {
-  "name": "aligner-php",
-  "main": "./lib/main",
-  "version": "1.0.0",
-  "description": "PHP support for aligner",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/adrianlee44/atom-aligner-php.git"
+  "_args": [
+    [
+      {
+        "raw": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117424-6109-1ckxvra/package.tgz",
+        "scope": null,
+        "escapedName": null,
+        "name": null,
+        "rawSpec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117424-6109-1ckxvra/package.tgz",
+        "spec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117424-6109-1ckxvra/package.tgz",
+        "type": "local"
+      },
+      "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/apm-install-dir-117424-6109-18zux5t"
+    ]
+  ],
+  "_from": "../d-117424-6109-1ckxvra/package.tgz",
+  "_id": "aligner-php@1.1.1",
+  "_inCache": true,
+  "_installable": true,
+  "_location": "/aligner-php",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117424-6109-1ckxvra/package.tgz",
+    "scope": null,
+    "escapedName": null,
+    "name": null,
+    "rawSpec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117424-6109-1ckxvra/package.tgz",
+    "spec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117424-6109-1ckxvra/package.tgz",
+    "type": "local"
   },
-  "license": "MIT",
-  "engines": {
-    "atom": ">=0.174.0 <2.0.0"
+  "_requiredBy": [
+    "#USER"
+  ],
+  "_resolved": "file:../d-117424-6109-1ckxvra/package.tgz",
+  "_shasum": "232f8374eb166b951d9fed656be87090f41d3195",
+  "_shrinkwrap": null,
+  "_spec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117424-6109-1ckxvra/package.tgz",
+  "_where": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/apm-install-dir-117424-6109-18zux5t",
+  "bugs": {
+    "url": "https://github.com/adrianlee44/atom-aligner-php/issues"
   },
   "dependencies": {},
+  "description": "PHP support for aligner",
+  "devDependencies": {},
+  "engines": {
+    "atom": ">=1.9.0"
+  },
+  "homepage": "https://github.com/adrianlee44/atom-aligner-php#readme",
+  "keywords": [
+    "aligner",
+    "alignment",
+    "align",
+    "php"
+  ],
+  "license": "MIT",
+  "main": "./lib/main",
+  "name": "aligner-php",
+  "optionalDependencies": {},
   "providedServices": {
     "aligner.provider": {
       "versions": {
@@ -19,28 +63,11 @@
       }
     }
   },
-  "readme": "# aligner-php\n\n[Aligner](https://github.com/adrianlee44/atom-aligner) add-on to support PHP.\n\n## Installation\nAligner must be installed along with this package. For more information, please check out [Aligner](https://github.com/adrianlee44/atom-aligner)\n\n## Changelog\n- 2015-05-13   v1.0.0   Initial release\n",
+  "readme": "# aligner-php\n\n[Aligner](https://github.com/adrianlee44/atom-aligner) add-on to support PHP.\n\n## Supported operators\n`=>`\n```php\narray(\n    key  => value,\n    key2 => value2,\n    key3 => value3,\n)\n```\n`=`:\n```php\n$a   == 2;\n$bcd == 3;\n```\n`==` and `===`:\n```php\necho (\n    $a    == 1 ? 'one' :\n    $a    == 2 ? 'two' :\n    $abc  == 3 ? 'three' :\n    $a   === 3 ? 'three' :\n    $a    == 4 ? 'four' : 'other');\n```\n\n## Installation\nAligner must be installed along with this package. For more information, please check out [Aligner](https://github.com/adrianlee44/atom-aligner)\n\n## Changelog\n- 2017-05-13   v1.1.1   Fix config titles.\n- 2017-05-13   v1.1.0   Add support for == and ===. Update documentation.\n- 2015-05-13   v1.0.0   Initial release\n",
   "readmeFilename": "README.md",
-  "bugs": {
-    "url": "https://github.com/adrianlee44/atom-aligner-php/issues"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrianlee44/atom-aligner-php.git"
   },
-  "homepage": "https://github.com/adrianlee44/atom-aligner-php#readme",
-  "_id": "aligner-php@1.0.0",
-  "_shasum": "d09f1e103e42536055eefdb156c5fa7ccadee0bd",
-  "_resolved": "file:../d-116125-62755-1kn7dwe/package.tgz",
-  "_from": "../d-116125-62755-1kn7dwe/package.tgz",
-  "_atomModuleCache": {
-    "version": 1,
-    "dependencies": [],
-    "extensions": {
-      ".coffee": [
-        "lib/main.coffee",
-        "lib/provider.coffee"
-      ],
-      ".json": [
-        "package.json"
-      ]
-    },
-    "folders": []
-  }
+  "version": "1.1.1"
 }

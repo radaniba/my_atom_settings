@@ -1,0 +1,38 @@
+'use babel';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+var _require = require('atom');
+
+var CompositeDisposable = _require.CompositeDisposable;
+
+var disposables = new CompositeDisposable();
+
+var toggle = function toggle(enable, text) {
+  var body = document.querySelector('body');
+
+  if (enable) {
+    body.className = body.className + ' ' + text;
+  } else {
+    body.className = body.className.replace(' ' + text, '');
+  }
+};
+
+var activate = function activate() {
+  disposables.add(atom.config.observe('seti-icons.noColor', function (value) {
+    return toggle(value, 'seti-icons-no-color');
+  }));
+
+  // Removes removed setting
+  atom.config.unset('seti-icons.iconsPlus');
+};
+
+exports.activate = activate;
+var deactivate = function deactivate() {
+  return disposables.dispose();
+};
+exports.deactivate = deactivate;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9SYWQvLmF0b20vcGFja2FnZXMvc2V0aS1pY29ucy9saWIvaW5kZXguanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUEsV0FBVyxDQUFBOzs7Ozs7ZUFFcUIsT0FBTyxDQUFDLE1BQU0sQ0FBQzs7SUFBdkMsbUJBQW1CLFlBQW5CLG1CQUFtQjs7QUFDM0IsSUFBTSxXQUFXLEdBQUcsSUFBSSxtQkFBbUIsRUFBQSxDQUFBOztBQUUzQyxJQUFNLE1BQU0sR0FBRyxTQUFULE1BQU0sQ0FBSyxNQUFNLEVBQUUsSUFBSSxFQUFNO0FBQ2pDLE1BQU0sSUFBSSxHQUFHLFFBQVEsQ0FBQyxhQUFhLENBQUMsTUFBTSxDQUFDLENBQUE7O0FBRTNDLE1BQUssTUFBTSxFQUFHO0FBQ1osUUFBSSxDQUFDLFNBQVMsR0FBTSxJQUFJLENBQUMsU0FBUyxTQUFJLElBQUksQUFBRSxDQUFBO0dBQzdDLE1BQU07QUFDTCxRQUFJLENBQUMsU0FBUyxHQUFHLElBQUksQ0FBQyxTQUFTLENBQUMsT0FBTyxPQUFLLElBQUksRUFBSSxFQUFFLENBQUMsQ0FBQTtHQUN4RDtDQUNGLENBQUE7O0FBRU0sSUFBTSxRQUFRLEdBQUcsU0FBWCxRQUFRLEdBQVM7QUFDNUIsYUFBVyxDQUFDLEdBQUcsQ0FDYixJQUFJLENBQUMsTUFBTSxDQUFDLE9BQU8sQ0FBQyxvQkFBb0IsRUFBRSxVQUFBLEtBQUs7V0FDN0MsTUFBTSxDQUFDLEtBQUssRUFBRSxxQkFBcUIsQ0FBQztHQUFBLENBQ3JDLENBQ0YsQ0FBQTs7O0FBR0QsTUFBSSxDQUFDLE1BQU0sQ0FBQyxLQUFLLENBQUMsc0JBQXNCLENBQUMsQ0FBQTtDQUMxQyxDQUFBOzs7QUFFTSxJQUFNLFVBQVUsR0FBRyxTQUFiLFVBQVU7U0FBUyxXQUFXLENBQUMsT0FBTyxFQUFFO0NBQUEsQ0FBQSIsImZpbGUiOiIvVXNlcnMvUmFkLy5hdG9tL3BhY2thZ2VzL3NldGktaWNvbnMvbGliL2luZGV4LmpzIiwic291cmNlc0NvbnRlbnQiOlsiJ3VzZSBiYWJlbCdcblxuY29uc3QgeyBDb21wb3NpdGVEaXNwb3NhYmxlIH0gPSByZXF1aXJlKCdhdG9tJylcbmNvbnN0IGRpc3Bvc2FibGVzID0gbmV3IENvbXBvc2l0ZURpc3Bvc2FibGVcblxuY29uc3QgdG9nZ2xlID0gKCBlbmFibGUsIHRleHQgKSA9PiB7XG4gIGNvbnN0IGJvZHkgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKCdib2R5JylcblxuICBpZiAoIGVuYWJsZSApIHtcbiAgICBib2R5LmNsYXNzTmFtZSA9IGAke2JvZHkuY2xhc3NOYW1lfSAke3RleHR9YFxuICB9IGVsc2Uge1xuICAgIGJvZHkuY2xhc3NOYW1lID0gYm9keS5jbGFzc05hbWUucmVwbGFjZShgICR7dGV4dH1gLCAnJylcbiAgfVxufVxuXG5leHBvcnQgY29uc3QgYWN0aXZhdGUgPSAoKSA9PiB7XG4gIGRpc3Bvc2FibGVzLmFkZChcbiAgICBhdG9tLmNvbmZpZy5vYnNlcnZlKCdzZXRpLWljb25zLm5vQ29sb3InLCB2YWx1ZSA9PlxuICAgICAgdG9nZ2xlKHZhbHVlLCAnc2V0aS1pY29ucy1uby1jb2xvcicpXG4gICAgKVxuICApXG5cbiAgLy8gUmVtb3ZlcyByZW1vdmVkIHNldHRpbmdcbiAgYXRvbS5jb25maWcudW5zZXQoJ3NldGktaWNvbnMuaWNvbnNQbHVzJylcbn1cblxuZXhwb3J0IGNvbnN0IGRlYWN0aXZhdGUgPSAoKSA9PiBkaXNwb3NhYmxlcy5kaXNwb3NlKClcbiJdfQ==
+//# sourceURL=/Users/Rad/.atom/packages/seti-icons/lib/index.js

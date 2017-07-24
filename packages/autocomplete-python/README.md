@@ -1,19 +1,23 @@
-# Python Autocomplete Package [![Build Status](https://travis-ci.org/sadovnychyi/autocomplete-python.svg?branch=master)](https://travis-ci.org/sadovnychyi/autocomplete-python)
+# Python Autocomplete Package [![Build Status](https://travis-ci.org/autocomplete-python/autocomplete-python.svg?branch=master)](https://travis-ci.org/autocomplete-python/autocomplete-python)
 
-Python packages, variables, methods and functions with their arguments autocompletion in [Atom](http://atom.io) powered by [Jedi](https://github.com/davidhalter/jedi).
+Python packages, variables, methods and functions with their arguments autocompletion in [Atom](http://atom.io) powered by your choice of [Jedi](https://github.com/davidhalter/jedi) or [Kite](https://kite.com).
+
+_Note that the Kite code engine is cloud-powered.  Type inference on your code is done on Kite's servers._  More info is provided during the install screens of autocomplete-python.
 
 See [releases](https://github.com/sadovnychyi/autocomplete-python/releases) for release notes.
+
+Jedi-driven release notes follow.  For more about using the Kite completions engine see [kite.com](https://kite.com).
 
 ![Demo](https://cloud.githubusercontent.com/assets/193864/12288427/61fe2114-ba0f-11e5-9832-98869180d87f.gif)
 
 # Features
 
-* Works with :apple: Mac OSX, :penguin: Linux and :checkered_flag: Windows
-* Works with both :snake: Python 2 and 3
-* Automatic lookup of virtual environments inside of your projects
-* Configurable additional packages to include for completions
-* Prints first N characters of statement value while completing variables
-* Prints function arguments while completing functions
+* Works with :apple: Mac OSX, :penguin: Linux and :checkered_flag: Windows.
+* Works with both :snake: Python 2 and 3.
+* Automatic lookup of virtual environments inside of your projects.
+* Configurable additional packages to include for completions.
+* Prints first N characters of statement value while completing variables.
+* Prints function arguments while completing functions.
 * Go-to-definition functionality, by default on `Alt+Cmd+G`/`Ctrl+Alt+G`. Thanks to [@patrys](https://github.com/patrys) for idea and implementation.
 * Method override functionality. Available as `override-method` command. Thanks to [@pchomik](https://github.com/pchomik) for idea and help.
 * If you have [Hyperclick](https://atom.io/packages/hyperclick) installed – you can click on anything to go-to-definition

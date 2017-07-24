@@ -1,44 +1,81 @@
 {
-  "name": "seti-icons",
-  "version": "0.4.5",
-  "main": "index",
+  "_args": [
+    [
+      {
+        "raw": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117515-2393-1p73ajy/package.tgz",
+        "scope": null,
+        "escapedName": null,
+        "name": null,
+        "rawSpec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117515-2393-1p73ajy/package.tgz",
+        "spec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117515-2393-1p73ajy/package.tgz",
+        "type": "local"
+      },
+      "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/apm-install-dir-117515-2393-171t5sn"
+    ]
+  ],
+  "_from": "../d-117515-2393-1p73ajy/package.tgz",
+  "_id": "seti-icons@1.5.3",
+  "_inCache": true,
+  "_installable": true,
+  "_location": "/seti-icons",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117515-2393-1p73ajy/package.tgz",
+    "scope": null,
+    "escapedName": null,
+    "name": null,
+    "rawSpec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117515-2393-1p73ajy/package.tgz",
+    "spec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117515-2393-1p73ajy/package.tgz",
+    "type": "local"
+  },
+  "_requiredBy": [
+    "#USER"
+  ],
+  "_resolved": "file:../d-117515-2393-1p73ajy/package.tgz",
+  "_shasum": "ef9b9ba5d79b11644d3cefa4d015e4fd12894b18",
+  "_shrinkwrap": null,
+  "_spec": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/d-117515-2393-1p73ajy/package.tgz",
+  "_where": "/private/var/folders/38/c32tn82s0238c61_q5nw37h40000gn/T/apm-install-dir-117515-2393-171t5sn",
+  "author": {
+    "name": "Neil Kistner",
+    "email": "neil.kistner@gmail.com",
+    "url": "neilkistner.com"
+  },
+  "bugs": {
+    "url": "https://github.com/wyze/atom-seti-icons/issues"
+  },
+  "configSchema": {
+    "noColor": {
+      "type": "boolean",
+      "default": false,
+      "description": "Display icons without color."
+    }
+  },
+  "dependencies": {},
   "description": "The awesome icons provided by Seti UI theme.",
+  "devDependencies": {
+    "write-changelog": "^1.1.0"
+  },
+  "engines": {
+    "atom": ">=1.4.0 <2.0.0"
+  },
+  "homepage": "https://github.com/wyze/atom-seti-icons#readme",
   "keywords": [
     "seti",
     "icons"
   ],
-  "scripts": {
-    "postpublish": "github-changes -o wyze -r seti-icons -a --use-commit-body -m '(MM/DD/YYYY)' --no-merges"
-  },
+  "license": "MIT",
+  "main": "lib/index",
+  "name": "seti-icons",
+  "optionalDependencies": {},
+  "readme": "# Seti Icons\n\n[![apm][apm-image]][apm-url]\n[![apmi][apmi-image]][apmi-url]\n\n> The awesome icons provided by [Seti UI](https://github.com/jesseweed/seti-ui) theme.\n\n![Seti UI](https://github.com/jesseweed/seti-ui/raw/master/screenshot-icons.png)\n\n## Settings\n\n| Name | Type | Default | Description |\n|---|---|---|---|\n| No Color | Boolean | false | Enables/disable color icons. |\n\n## Credits\n\nThank you to [Jesse Weed](//github.com/jesseweed) for making the original Seti UI theme.\n\n## Change Log\n\n> [Full Change Log](changelog.md)\n\n### [v1.5.3](https://github.com/wyze/atom-seti-icons/releases/tag/v1.5.3) (2017-06-01)\n\n* [[`2b7bd6a6b0`](https://github.com/wyze/atom-seti-icons/commit/2b7bd6a6b0)] - Add theme override for Nucleus Dark (Neil Kistner)\n\n## License\n\nMIT © [Neil Kistner](https://neilkistner.com)\n\n[apm-image]: https://img.shields.io/apm/v/seti-icons.svg?style=flat-square\n[apm-url]: https://atom.io/packages/seti-icons\n\n[apmi-image]: https://img.shields.io/apm/dm/seti-icons.svg?style=flat-square\n[apmi-url]: https://atom.io/packages/seti-icons\n",
+  "readmeFilename": "readme.md",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wyze/seti-icons.git"
+    "url": "git+https://github.com/wyze/atom-seti-icons.git"
   },
-  "license": "MIT",
-  "engines": {
-    "atom": ">=0.174.0 <2.0.0"
+  "scripts": {
+    "version": "write-changelog"
   },
-  "readme": "# Seti Icons\n\n> The awesome icons provided by Seti UI theme.\n\n![Seti UI](https://github.com/jesseweed/seti-ui/raw/master/screenshot.png)\n\n## Settings\n\n| Name | Type | Default | Description |\n|---|---|---|---|\n| No Color | Boolean | false | Enables/disable color icons. |\n| Icons Plus | Boolean | false | Enables/disables additional/enhanced icons. |\n\n## Change Log\n\n[Full Change Log](CHANGELOG.md)\n\n### v0.4.5 (09/03/2015)\n- [16c5eed](https://github.com/wyze/seti-icons/commit/16c5eedd3691c27f07f056b00afba72d755c4261) adjust margin for icons with Atom Material theme (@wyze)\n- [04ff09f](https://github.com/wyze/seti-icons/commit/04ff09fc70ab563910b7cdaedc68e4c72da98e9b) Add icons for .h & .hpp (@plieb)\n\n## Credits\n\nThank you to [Jesse Weed](//github.com/jesseweed) for making the original Seti UI theme.\n\n## License\n\nCopyright (c) 2015 [Neil Kistner](//github.com/wyze)\n\nReleased under the MIT license. See [LICENSE](LICENSE) for details.\n",
-  "readmeFilename": "README.md",
-  "bugs": {
-    "url": "https://github.com/wyze/seti-icons/issues"
-  },
-  "homepage": "https://github.com/wyze/seti-icons#readme",
-  "_id": "seti-icons@0.4.5",
-  "_shasum": "12566dac58f97fbeef9088cb54180c0584239a46",
-  "_resolved": "file:../d-11614-71516-1i3tcqk/package.tgz",
-  "_from": "../d-11614-71516-1i3tcqk/package.tgz",
-  "_atomModuleCache": {
-    "version": 1,
-    "dependencies": [],
-    "extensions": {
-      ".coffee": [
-        "index.coffee"
-      ],
-      ".json": [
-        "package.json"
-      ]
-    },
-    "folders": []
-  }
+  "version": "1.5.3"
 }

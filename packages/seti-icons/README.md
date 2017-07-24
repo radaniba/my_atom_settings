@@ -1,30 +1,36 @@
 # Seti Icons
 
-> The awesome icons provided by Seti UI theme.
+[![apm][apm-image]][apm-url]
+[![apmi][apmi-image]][apmi-url]
 
-![Seti UI](https://github.com/jesseweed/seti-ui/raw/master/screenshot.png)
+> The awesome icons provided by [Seti UI](https://github.com/jesseweed/seti-ui) theme.
+
+![Seti UI](https://github.com/jesseweed/seti-ui/raw/master/screenshot-icons.png)
 
 ## Settings
 
 | Name | Type | Default | Description |
 |---|---|---|---|
 | No Color | Boolean | false | Enables/disable color icons. |
-| Icons Plus | Boolean | false | Enables/disables additional/enhanced icons. |
-
-## Change Log
-
-[Full Change Log](CHANGELOG.md)
-
-### v0.4.5 (09/03/2015)
-- [16c5eed](https://github.com/wyze/seti-icons/commit/16c5eedd3691c27f07f056b00afba72d755c4261) adjust margin for icons with Atom Material theme (@wyze)
-- [04ff09f](https://github.com/wyze/seti-icons/commit/04ff09fc70ab563910b7cdaedc68e4c72da98e9b) Add icons for .h & .hpp (@plieb)
 
 ## Credits
 
 Thank you to [Jesse Weed](//github.com/jesseweed) for making the original Seti UI theme.
 
+## Change Log
+
+> [Full Change Log](changelog.md)
+
+### [v1.5.3](https://github.com/wyze/atom-seti-icons/releases/tag/v1.5.3) (2017-06-01)
+
+* [[`2b7bd6a6b0`](https://github.com/wyze/atom-seti-icons/commit/2b7bd6a6b0)] - Add theme override for Nucleus Dark (Neil Kistner)
+
 ## License
 
-Copyright (c) 2015 [Neil Kistner](//github.com/wyze)
+MIT © [Neil Kistner](https://neilkistner.com)
 
-Released under the MIT license. See [LICENSE](LICENSE) for details.
+[apm-image]: https://img.shields.io/apm/v/seti-icons.svg?style=flat-square
+[apm-url]: https://atom.io/packages/seti-icons
+
+[apmi-image]: https://img.shields.io/apm/dm/seti-icons.svg?style=flat-square
+[apmi-url]: https://atom.io/packages/seti-icons

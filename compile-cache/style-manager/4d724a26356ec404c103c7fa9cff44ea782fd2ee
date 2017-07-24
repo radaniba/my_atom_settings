@@ -1,0 +1,1 @@
+{"source":".gist .panel-body.padded {\n  padding-bottom: 0;\n}\n.gist .loading {\n  margin: auto;\n  margin-top: 1em;\n  margin-bottom: 1em;\n}\n"}

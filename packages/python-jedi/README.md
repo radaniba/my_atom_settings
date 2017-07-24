@@ -1,42 +1,27 @@
 # python-jedi package
 
-Python Jedi based autocompletion plugin.
+	Python Jedi based autocompletion plugin.
 
 ## Features
-  - Autocomplete
+  - Autocomplete.
   - Goto Definition.
 
 ## Installation
-Either use Atoms package manager or `apm install python-jedi`. Install autocomplete-plus before installing this package.
+  -	Either use Atoms package manager or `apm install python-jedi`. Install autocomplete-plus before installing this package.
 
 ### Usage
-
-python-jedi uses python3 interpreter in your path by default.
-
-For python2 autocomplete go to settings -> check Enable Python2 and uncheck to use Python3.
-
-#### To Use virtualenv/pyvenv
-  - Add virtualenv path or pyvenv path in the settings(Pathtopython field).(eg:/home/user/py3pyenv/bin/python3 or /home/user/py2virtualenv/bin/python).
-
-  - Check 'Enable Pathtopython' option in package settings.
-
-  - Make sure you are giving the correct virtualenv/pyvenv path. Otherwise autocomplete won't work. Also for python2 virtualenv path to work, you must have checked 'Enable Python2' option.
+  - python-jedi uses python3 interpreter in your path by default.(i.e., by default Pathtopython field holds value python3).
+  -	Enter the path to python executable in the settings(Pathtopython field) (eg:/home/user/py3pyenv/bin/python3 or /home/user/py2virtualenv/bin/python).
 
 #### To Use Goto Definition
   - Use the keyboard shortcut `ctrl-alt-j`.
 
 ### Note
+  - You may get spawn error if python executable is not in your path. To avoid frequent spawn errors -> enter the path to python executable in Path2python field (eg: /usr/bin/python3 or /usr/bin/python2 or /usr/bin/python).
+  - I do not know whether this extension works in windows os environment. But works in linux with python installed. Still if it is not working., please then create an issue and help in solving the issue.
 
-- If you are not using virtualenv path, please uncheck 'Enable Pathtopython'.
-
-- The completion daemon is started on port 7777 - please make sure no
-other service is using this port.
-
-- The completion daemon is stopped appropriately, which was fully tested in linux
-environment. The package has not been tested under windows environment. It might
-be buggy.
-
-### Warning
-
-Do not use it along with autocomplete-plus-jedi. Since it is originally forked
-from it, python-jedi may malfunction.
+### Links
+  - This package => forked from [autocomplete-plus-jedi](https://github.com/fallenhitokiri/autocomplete-plus-jedi)
+  - Jedi library api reference [Jedi](http://jedi.readthedocs.io/en/latest/index.html).
+  - Regular expressions testing and debugging using [regex101](https://regex101.com).
+  

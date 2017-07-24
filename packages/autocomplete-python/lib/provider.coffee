@@ -1,27 +1,17 @@
-{Disposable, CompositeDisposable, BufferedProcess} = require 'atom'
-{selectorsMatchScopeChain} = require './scope-helpers'
-{Selector} = require 'selector-kit'
-DefinitionsView = require './definitions-view'
-UsagesView = require './usages-view'
-OverrideView = require './override-view'
-RenameView = require './rename-view'
-InterpreterLookup = require './interpreters-lookup'
 log = require './log'
-_ = require 'underscore'
-filter = undefined
 
 module.exports =
   selector: '.source.python'
   disableForSelector: '.source.python .comment, .source.python .string'
   inclusionPriority: 2
-  suggestionPriority: 3
+  suggestionPriority: atom.config.get('autocomplete-python.suggestionPriority')
   excludeLowerPriority: false
   cacheSize: 10
 
   _addEventListener: (editor, eventName, handler) ->
     editorView = atom.views.getView editor
     editorView.addEventListener eventName, handler
-    disposable = new Disposable ->
+    disposable = new @Disposable ->
       log.debug 'Unsubscribing from event listener ', eventName, handler
       editorView.removeEventListener eventName, handler
     return disposable
@@ -42,9 +32,9 @@ module.exports =
     @providerNoExecutable = true
 
   _spawnDaemon: ->
-    interpreter = InterpreterLookup.getInterpreter()
+    interpreter = @InterpreterLookup.getInterpreter()
     log.debug 'Using interpreter', interpreter
-    @provider = new BufferedProcess
+    @provider = new @BufferedProcess
       command: interpreter or 'python'
       args: [__dirname + '/completion.py']
       stdout: (data) =>
@@ -67,6 +57,13 @@ module.exports =
             'autocomplete-python traceback output:', {
               detail: "#{data}",
               dismissable: true})
+
+        log.debug "Forcing to resolve #{Object.keys(@requests).length} promises"
+        for requestId, resolve of @requests
+          if typeof resolve == 'function'
+            resolve([])
+          delete @requests[requestId]
+
       exit: (code) =>
         log.warning 'Process exit with', code, @provider
     @provider.onWillThrowError ({error, handle}) =>
@@ -86,16 +83,35 @@ module.exports =
         @provider.kill()
     , 60 * 10 * 1000
 
-  constructor: ->
+  load: ->
+    if not @constructed
+      @constructor()
+    return this
+
+  constructor: () ->
+    {@Disposable, @CompositeDisposable, @BufferedProcess} = require 'atom'
+    {@selectorsMatchScopeChain} = require './scope-helpers'
+    {@Selector} = require 'selector-kit'
+    @DefinitionsView = require './definitions-view'
+    @UsagesView = require './usages-view'
+    @OverrideView = require './override-view'
+    @RenameView = require './rename-view'
+    @InterpreterLookup = require './interpreters-lookup'
+    @_ = require 'underscore'
+    @filter = require('fuzzaldrin-plus').filter
+
     @requests = {}
     @responses = {}
     @provider = null
-    @disposables = new CompositeDisposable
+    @disposables = new @CompositeDisposable
     @subscriptions = {}
     @definitionsView = null
     @usagesView = null
     @renameView = null
+    @constructed = true
     @snippetsManager = null
+
+    log.debug "Init autocomplete-python with priority #{@suggestionPriority}"
 
     try
       @triggerCompletionRegex = RegExp atom.config.get(
@@ -122,7 +138,7 @@ module.exports =
       bufferPosition = editor.getCursorBufferPosition()
       if @usagesView
         @usagesView.destroy()
-      @usagesView = new UsagesView()
+      @usagesView = new @UsagesView()
       @getUsages(editor, bufferPosition).then (usages) =>
         @usagesView.setItems(usages)
 
@@ -131,7 +147,7 @@ module.exports =
       bufferPosition = editor.getCursorBufferPosition()
       if @overrideView
         @overrideView.destroy()
-      @overrideView = new OverrideView()
+      @overrideView = new @OverrideView()
       @getMethods(editor, bufferPosition).then ({methods, indent, bufferPosition}) =>
         @overrideView.indent = indent
         @overrideView.bufferPosition = bufferPosition
@@ -144,9 +160,9 @@ module.exports =
         if @renameView
           @renameView.destroy()
         if usages.length > 0
-          @renameView = new RenameView(usages)
+          @renameView = new @RenameView(usages)
           @renameView.onInput (newName) =>
-            for fileName, usages of _.groupBy(usages, 'fileName')
+            for fileName, usages of @_.groupBy(usages, 'fileName')
               [project, _relative] = atom.project.relativizePath(fileName)
               if project
                 @_updateUsagesInFile(fileName, usages, newName)
@@ -155,12 +171,12 @@ module.exports =
         else
           if @usagesView
             @usagesView.destroy()
-          @usagesView = new UsagesView()
+          @usagesView = new @UsagesView()
           @usagesView.setItems(usages)
 
     atom.workspace.observeTextEditors (editor) =>
       @_handleGrammarChangeEvent(editor, editor.getGrammar())
-      editor.displayBuffer.onDidChangeGrammar (grammar) =>
+      editor.onDidChangeGrammar (grammar) =>
         @_handleGrammarChangeEvent(editor, grammar)
 
     atom.config.onDidChange 'autocomplete-plus.enableAutoActivation', =>
@@ -183,20 +199,78 @@ module.exports =
         columnOffset[line] += newName.length - name.length
       buffer.save()
 
+
+  _showSignatureOverlay: (event) ->
+    if @markers
+      for marker in @markers
+        log.debug 'destroying old marker', marker
+        marker.destroy()
+    else
+      @markers = []
+
+    cursor = event.cursor
+    editor = event.cursor.editor
+    wordBufferRange = cursor.getCurrentWordBufferRange()
+    scopeDescriptor = editor.scopeDescriptorForBufferPosition(
+      event.newBufferPosition)
+    scopeChain = scopeDescriptor.getScopeChain()
+
+    disableForSelector = "#{@disableForSelector}, .source.python .numeric, .source.python .integer, .source.python .decimal, .source.python .punctuation, .source.python .keyword, .source.python .storage, .source.python .variable.parameter, .source.python .entity.name"
+    disableForSelector = @Selector.create(disableForSelector)
+
+    if @selectorsMatchScopeChain(disableForSelector, scopeChain)
+      log.debug 'do nothing for this selector'
+      return
+
+    marker = editor.markBufferRange(
+      wordBufferRange,
+      {persistent: false, invalidate: 'never'})
+
+    @markers.push(marker)
+
+    getTooltip = (editor, bufferPosition) =>
+      payload =
+        id: @_generateRequestId('tooltip', editor, bufferPosition)
+        lookup: 'tooltip'
+        path: editor.getPath()
+        source: editor.getText()
+        line: bufferPosition.row
+        column: bufferPosition.column
+        config: @_generateRequestConfig()
+      @_sendRequest(@_serialize(payload))
+      return new Promise (resolve) =>
+        @requests[payload.id] = resolve
+
+    getTooltip(editor, event.newBufferPosition).then (results) =>
+      if results.length > 0
+        {text, fileName, line, column, type, description} = results[0]
+
+        description = description.trim()
+        if not description
+          return
+        view = document.createElement('autocomplete-python-suggestion')
+        view.appendChild(document.createTextNode(description))
+        decoration = editor.decorateMarker(marker, {
+            type: 'overlay',
+            item: view,
+            position: 'head'
+        })
+        log.debug('decorated marker', marker)
+
   _handleGrammarChangeEvent: (editor, grammar) ->
     eventName = 'keyup'
-    eventId = "#{editor.displayBuffer.id}.#{eventName}"
+    eventId = "#{editor.id}.#{eventName}"
     if grammar.scopeName == 'source.python'
+
+      if atom.config.get('autocomplete-python.showTooltips') is true
+        editor.onDidChangeCursorPosition (event) =>
+          @_showSignatureOverlay(event)
+
       if not atom.config.get('autocomplete-plus.enableAutoActivation')
         log.debug 'Ignoring keyup events due to autocomplete-plus settings.'
         return
       disposable = @_addEventListener editor, eventName, (e) =>
-        bracketIdentifiers =
-          'U+0028': 'qwerty'
-          'U+0038': 'german'
-          'U+0035': 'azerty'
-          'U+0039': 'other'
-        if e.keyIdentifier of bracketIdentifiers
+        if atom.keymaps.keystrokeForKeyboardEvent(e) == '^('
           log.debug 'Trying to complete arguments on keyup event', e
           @_completeArguments(editor, editor.getCursorBufferPosition())
       @disposables.add disposable
@@ -250,13 +324,18 @@ module.exports =
     log.debug 'Deserealizing response from Jedi', response
     log.debug "Got #{response.trim().split('\n').length} lines"
     for responseSource in response.trim().split('\n')
-      response = JSON.parse(responseSource)
+      try
+        response = JSON.parse(responseSource)
+      catch e
+        throw new Error("""Failed to parse JSON from \"#{responseSource}\".
+                           Original exception: #{e}""")
+
       if response['arguments']
         editor = @requests[response['id']]
         if typeof editor == 'object'
           bufferPosition = editor.getCursorBufferPosition()
           # Compare response ID with current state to avoid stale completions
-          if response['id'] == @_generateRequestId(editor, bufferPosition)
+          if response['id'] == @_generateRequestId('arguments', editor, bufferPosition)
             @snippetsManager?.insertSnippet(response['arguments'], editor)
       else
         resolve = @requests[response['id']]
@@ -275,15 +354,15 @@ module.exports =
       log.debug 'Cached request with ID', response['id']
       delete @requests[response['id']]
 
-  _generateRequestId: (editor, bufferPosition, text) ->
+  _generateRequestId: (type, editor, bufferPosition, text) ->
     if not text
       text = editor.getText()
     return require('crypto').createHash('md5').update([
       editor.getPath(), text, bufferPosition.row,
-      bufferPosition.column].join()).digest('hex')
+      bufferPosition.column, type].join()).digest('hex')
 
   _generateRequestConfig: ->
-    extraPaths = InterpreterLookup.applySubstitutions(
+    extraPaths = @InterpreterLookup.applySubstitutions(
       atom.config.get('autocomplete-python.extraPaths').split(';'))
     args =
       'extraPaths': extraPaths
@@ -305,8 +384,8 @@ module.exports =
       return
     scopeDescriptor = editor.scopeDescriptorForBufferPosition(bufferPosition)
     scopeChain = scopeDescriptor.getScopeChain()
-    disableForSelector = Selector.create(@disableForSelector)
-    if selectorsMatchScopeChain(disableForSelector, scopeChain)
+    disableForSelector = @Selector.create(@disableForSelector)
+    if @selectorsMatchScopeChain(disableForSelector, scopeChain)
       log.debug 'Ignoring argument completion inside of', scopeChain
       return
 
@@ -323,7 +402,7 @@ module.exports =
       return
 
     payload =
-      id: @_generateRequestId(editor, bufferPosition)
+      id: @_generateRequestId('arguments', editor, bufferPosition)
       lookup: 'arguments'
       path: editor.getPath()
       source: editor.getText()
@@ -337,13 +416,13 @@ module.exports =
 
   _fuzzyFilter: (candidates, query) ->
     if candidates.length isnt 0 and query not in [' ', '.', '(']
-      filter ?= require('fuzzaldrin-plus').filter
-      candidates = filter(candidates, query, key: 'text')
+      candidates = @filter(candidates, query, key: 'text')
     return candidates
 
   getSuggestions: ({editor, bufferPosition, scopeDescriptor, prefix}) ->
+    @load()
     if not @triggerCompletionRegex.test(prefix)
-      return []
+      return @lastSuggestions = []
     bufferPosition =
       row: bufferPosition.row
       column: bufferPosition.column
@@ -356,15 +435,16 @@ module.exports =
       if lastIdentifier
         bufferPosition.column = lastIdentifier.index + 1
         lines[bufferPosition.row] = line.slice(0, bufferPosition.column)
-    requestId = @_generateRequestId(editor, bufferPosition, lines.join('\n'))
+    requestId = @_generateRequestId(
+      'completions', editor, bufferPosition, lines.join('\n'))
     if requestId of @responses
       log.debug 'Using cached response with ID', requestId
       # We have to parse JSON on each request here to pass only a copy
       matches = JSON.parse(@responses[requestId]['source'])['results']
       if atom.config.get('autocomplete-python.fuzzyMatcher')
-        return @_fuzzyFilter(matches, prefix)
+        return @lastSuggestions = @_fuzzyFilter(matches, prefix)
       else
-        return matches
+        return @lastSuggestions = matches
     payload =
       id: requestId
       prefix: prefix
@@ -379,13 +459,14 @@ module.exports =
     return new Promise (resolve) =>
       if atom.config.get('autocomplete-python.fuzzyMatcher')
         @requests[payload.id] = (matches) =>
-          resolve(@_fuzzyFilter(matches, prefix))
+          resolve(@lastSuggestions = @_fuzzyFilter(matches, prefix))
       else
-        @requests[payload.id] = resolve
+        @requests[payload.id] = (suggestions) =>
+          resolve(@lastSuggestions = suggestions)
 
   getDefinitions: (editor, bufferPosition) ->
     payload =
-      id: @_generateRequestId(editor, bufferPosition)
+      id: @_generateRequestId('definitions', editor, bufferPosition)
       lookup: 'definitions'
       path: editor.getPath()
       source: editor.getText()
@@ -399,7 +480,7 @@ module.exports =
 
   getUsages: (editor, bufferPosition) ->
     payload =
-      id: @_generateRequestId(editor, bufferPosition)
+      id: @_generateRequestId('usages', editor, bufferPosition)
       lookup: 'usages'
       path: editor.getPath()
       source: editor.getText()
@@ -417,7 +498,7 @@ module.exports =
     lines.splice(bufferPosition.row + 1, 0, "  def __autocomplete_python(s):")
     lines.splice(bufferPosition.row + 2, 0, "    s.")
     payload =
-      id: @_generateRequestId(editor, bufferPosition)
+      id: @_generateRequestId('methods', editor, bufferPosition)
       lookup: 'methods'
       path: editor.getPath()
       source: lines.join('\n')
@@ -437,13 +518,14 @@ module.exports =
       bufferPosition = editor.getCursorBufferPosition()
     if @definitionsView
       @definitionsView.destroy()
-    @definitionsView = new DefinitionsView()
+    @definitionsView = new @DefinitionsView()
     @getDefinitions(editor, bufferPosition).then (results) =>
       @definitionsView.setItems(results)
       if results.length == 1
         @definitionsView.confirmed(results[0])
 
   dispose: ->
-    @disposables.dispose()
+    if @disposables
+      @disposables.dispose()
     if @provider
       @provider.kill()

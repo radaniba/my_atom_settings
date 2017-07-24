@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.3.2
+
+*   Handle unsaved files ([#242][])
+*   Remove PHP version check ([#243][])
+*   Clarify settings page scopes ([#229][])
+*   Update dependencies ([#226][], [#236][])
+*   Update and fix CI ([#230][], [#241][])
+
+[#226]: https://github.com/AtomLinter/linter-php/pull/226
+[#229]: https://github.com/AtomLinter/linter-php/pull/229
+[#230]: https://github.com/AtomLinter/linter-php/pull/230
+[#236]: https://github.com/AtomLinter/linter-php/pull/236
+[#241]: https://github.com/AtomLinter/linter-php/pull/241
+[#242]: https://github.com/AtomLinter/linter-php/pull/242
+[#243]: https://github.com/AtomLinter/linter-php/pull/243
+
+## v1.3.1
+
+*   Fix executablePath reference in testBin ([#215](https://github.com/AtomLinter/linter-php/pull/215))
+
+## v1.3.0
+
+*   Run from the directory of the file ([#172](https://github.com/AtomLinter/linter-php/pull/172))
+*   Allow overriding `error_reporting` from `php.ini` ([#181](https://github.com/AtomLinter/linter-php/pull/181))
+*   Add exception handling ([#197](https://github.com/AtomLinter/linter-php/pull/197))
+*   Rewrite in ES2017 ([#214](https://github.com/AtomLinter/linter-php/pull/214))
+*   Many dependency updates
+
 ## 1.2.0
 
 *   Handle fatal errors ([#141](https://github.com/AtomLinter/linter-php/pull/141))

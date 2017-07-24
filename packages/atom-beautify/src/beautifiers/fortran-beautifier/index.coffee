@@ -8,6 +8,8 @@ path = require("path")
 
 module.exports = class FortranBeautifier extends Beautifier
   name: "Fortran Beautifier"
+  link: "https://www.gnu.org/software/emacs/"
+  isPreInstalled: false
 
   options: {
     Fortran: true

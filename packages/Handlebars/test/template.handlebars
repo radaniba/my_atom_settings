@@ -4,11 +4,15 @@
 <p>Testing <strong>{{{testToken}}}</strong> {{#if otherCondition}}<strong>"{{otherTestToken}}"</strong> {{/if}}</p>
 {{else}}
 <p>'Thus spoke Zarathustra' – "ORLY?"</p>
+{{/if}}
 
 <div class="{{class}}{{#if shouldBeRed}} red{{/if}}">
 	<custom-element>Test</custom-element>
 	<{{tag}} attr="asdf">asdf</{{tag}}>
 	<input name="{{noCaps name}}" placeholder="{{#unless placeholder}}{{name}}{{else}}{{placeholder}}{{/unless}}" type="text"/>
+	{{!-- parent context --}}
+	{{> template arg=../value}}
+	{{../value}}
 </div>
 
 {{> yayPartial customData='FoolBar'}}
@@ -32,9 +36,9 @@
 {{! FIXME: named block parameters }}
 {{! this could be improved }}
 {{#each users as |user userId|}}
-  {{#each user.book as |book bookId|}}
-    User Id: {{userId}} Book Id: {{bookId}}
-  {{/each}}
+	{{#each user.book as |book bookId|}}
+		User Id: {{userId}} Book Id: {{bookId}}
+	{{/each}}
 {{/each}}
 
 {{! FIXME: array notation }}
@@ -75,3 +79,36 @@
 {{else if alternate}}
 <p>Second</p>
 {{/if}}
+
+{{#x-card onsubmit=attrs.onsubmit title='Login to Peepchat' buttonText='Login'}}
+	<div class="row">
+		{{x-input
+			value=model.email
+			errors=validations.attrs.model.email.messages
+			classNames='col s12'
+			type='email'
+			label='Username'}}
+	</div>
+	<div class="row">
+		{{x-input
+			value=model.password
+			errors=validations.attrs.model.password.messages
+			classNames='col s12'
+			type='password'
+			label='Password'}}
+	</div>
+{{/x-card}}
+
+{{$x "foo." bar}}
+
+{{!-- con😺 --}}
+{{some-component name=(concat firstName " " lastName)}}
+{{concat prop1 ' ' prop2}}
+
+{{! partial block }}
+{{#> myPartial }}
+	Failover content
+{{/myPartial}}
+
+{{!-- Ember component path --}}
+{{#some-folder/some-path}}{{/some-folder/some-path}}

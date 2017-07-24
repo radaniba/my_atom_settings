@@ -1,0 +1,1 @@
+{"source":".branch-status-pr-number,\n.branch-status-target-link {\n  color: inherit;\n  text-decoration: none !important;\n}\n"}

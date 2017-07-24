@@ -1,0 +1,1045 @@
+from __future__ import division
+import os
+import sys
+import time
+import numpy as np
+import pybedtools
+import pandas as pd
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+from matplotlib.ticker import MaxNLocator
+from matplotlib import rcParams
+from matplotlib import colors
+from mpltools import style
+import mpld3
+import matplotlib.gridspec as gridspec
+import scipy.spatial.distance as distance
+import scipy.cluster.hierarchy as sch
+import scipy.stats as stats
+import seaborn as sns
+import pysam
+
+style.use('ggplot')
+
+# TO solve the issue of maximum recursion depth exceeded while getting the str of an object
+sys.setrecursionlimit(10000)
+
+
+my_locator = MaxNLocator(6)
+# rcParams dict
+
+rcParams['axes.labelsize'] = 9
+rcParams['xtick.labelsize'] = 9
+rcParams['ytick.labelsize'] = 9
+rcParams['legend.fontsize'] = 7
+# rcParams['font.family'] = 'serif'
+rcParams['font.serif'] = ['Computer Modern Roman']
+rcParams['text.usetex'] = False
+rcParams['figure.figsize'] = 20, 10
+
+
+# Borrowed from https://github.com/CGATOxford/cgat/blob/e0e83fc42b83489f9cd936836220bb32c98ed259/CGAT/BamTools.py
+def isPaired(bamfile, alignments=100000000):
+    '''check if a *bamfile* contains paired end data
+
+    The method reads at most the first *alignments* and returns
+    True if any of the alignments are paired.
+    '''
+    samfile = pysam.Samfile(bamfile)
+    n = 0
+    for read in samfile:
+        if read.is_paired:
+            break
+        n += 1
+        if n == alignments:
+            break
+    samfile.close()
+    return n != alignments
+
+
+def estimateInsertSizeDistribution(bamfile, alignments=1000000000):
+    '''
+    estimate insert size from first alignments in bam file.
+    returns mean and stddev of insert sizes.
+    '''
+    assert isPaired(bamfile), \
+        'can only estimate insert size from' \
+        'paired bam files'
+    samfile = pysam.Samfile(bamfile)
+    # only get positive to avoid double counting
+    inserts = np.array(
+        [read.tlen for read in samfile.head(alignments)
+         if read.is_proper_pair and read.tlen > 0])
+    return inserts
+
+
+class tsa(object):
+
+    def __init__(self, list_of_bam_files, binomial_result_file_list, region_file, outdir, labels):
+        self.list_of_bam_files = list_of_bam_files
+        self.binomial_result_file_list = binomial_result_file_list
+        self.region_file = region_file
+        self.outdir = outdir
+        self.labels = labels
+
+    def warning(self):
+        N = len(self.list_of_bam_files)
+        if N >= 10:
+            print u"\u2601" + " You are generating plots for " + str(N) + " bam files, some plots will be really really ugly !"
+
+    @staticmethod
+    def clean_axis(ax):
+        """Remove ticks, tick labels, and frame from axis"""
+        ax.get_xaxis().set_ticks([])
+        ax.get_yaxis().set_ticks([])
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+
+    @staticmethod
+    def status_update(message):
+        print u"\U0001F50A" + "     " + message
+
+    @staticmethod
+    def split_coverage(x):
+        """
+        Split a coverage file created using bedtools coverage -hist -- which will
+        have trailing "all" hist lines -- into 1) a BedTool object with valid BED
+        lines and 2) a pandas DataFrame of all coverage, parsed from the trailing
+        "all" lines.
+        `x` can be a filename or a BedTool instance.
+        """
+        if isinstance(x, basestring):
+            fn = x
+        else:
+            fn = x.fn
+
+        f = open(fn)
+        hist_lines = []
+
+        def gen():
+            """
+            Generator that yields only valid BED lines and then stops.
+
+            The first "all" line is appended to hist_lines.
+            """
+            while True:
+                line = f.next()
+                toks = line.strip().split('\t')
+                if toks[0] == 'all':
+                    # Don't need to include the "all" text in the first field.
+                    hist_lines.append(toks[1:])
+                    break
+                yield pybedtools.create_interval_from_list(toks)
+
+        # Create a BedTool from the generator, and call `saveas` to consume the
+        # generator.  We need this so that the file pointer will stop right after
+        # the first "all" line.
+        b = pybedtools.BedTool(gen()).saveas()
+
+        # Pick up where we left off in the open file, appending to hist_lines.
+        while True:
+            try:
+                line = f.next()
+            except StopIteration:
+                break
+            hist_lines.append(line.strip().split('\t')[1:])
+
+        df = pd.DataFrame(
+            hist_lines,
+            columns=['depth', 'count', 'size', 'percent'])
+        return b, df
+
+    def get_coverage(self, bam_file):
+        '''
+        Get coverage from a BAM file,  by looking only inside the regions provided by the region_file
+        This function is wrapping the coberageBed from BedTools with no histogram creation
+
+        What to test ?:
+
+        if alignment is empty
+        if region file is empty
+        if coverage_result is empty
+
+
+        '''
+        alignment = pybedtools.BedTool(bam_file)
+        regions = pybedtools.BedTool(self.region_file)
+        print 'Calculating coverage over regions ...'
+        sys.stdout.flush()
+        t0 = time.time()
+        # Need to sort to maintain consistency with metaseq
+        coverage_result = alignment.coverage(regions).sort()
+        coverage_array = np.array([i[-1] for i in coverage_result], dtype=int)
+
+        t1 = time.time()
+        print 'completed in %.2fs' % (t1 - t0)
+        sys.stdout.flush()
+        return coverage_array
+
+    def get_coverage_histogram(self, bam_file, outfile):
+        '''
+        This function is important to get the `all` histogram data from BedTools coverageBed
+        This will be used to plot the cumulative distribution plot of the coverage
+        '''
+        alignment = pybedtools.BedTool(bam_file)
+        regions = pybedtools.BedTool(self.region_file)
+        coverage = alignment.coverage(regions, hist=True, output=outfile)
+        # Now get the coverage and the all histogram
+        coverage_histogram, all_histogram = self.split_coverage(coverage)
+
+        for _ in coverage_histogram:
+            pass
+
+        return coverage_histogram, all_histogram
+
+    def plot_coverage_histogram(self):
+        '''
+        This function generates a plot of three
+        1/ Coverage Histogram in amplicon regions
+        2/ Cumulative Histogram in amplicon region
+        3/ Fraction of capture target bases >= depth
+        It is reading a list of bam files and a region file
+        '''
+        N = len(self.list_of_bam_files)
+        sample_colors = cm.get_cmap('Paired', N)
+        palette = sample_colors(np.arange(N))
+        # samples = []
+        depth_list = []
+        percent_list = []
+        fraction_list = []
+        # Set the initial layout
+        fig1 = plt.figure()
+        fig2 = plt.figure()
+        fig3 = plt.figure()
+        # fig.set_size_inches(18.5, 14.5)
+        # I decided to split the figure into 3 different ones
+        self.status_update("Plotting coverage histogram")
+        ax1 = fig1.add_subplot(1, 1, 1)
+        ax1.set_title("Coverage histogram in amplicon region")
+        ax1.set_xlabel('Coverage')
+        # ax1.set_xlim((min(depth), max(depth)))
+        self.status_update("Plotting coverage saturation")
+        ax2 = fig2.add_subplot(1, 1, 1)
+        ax2.set_title("Saturation curve : Cumulative detailed histogram")
+        ax2.set_xlabel('Coverage')
+        # ax2.set_xlim((min(depth), max(depth)))
+        self.status_update("Plotting target region coverage")
+        ax3 = fig3.add_subplot(1, 1, 1)
+        ax3.set_title('Target Region Coverage')
+        ax3.set_xlabel('Coverage(X)')
+        ax3.set_ylabel('Fraction of capture target bases ' + u"\u2267" + ' depth')
+        ax3.set_ylim(0.0, 1.0)
+        # and populate the plots
+        for bam_file in self.list_of_bam_files:
+            sample_id = os.path.splitext(os.path.basename(bam_file))[0]
+            # samples.append(sample_id)
+            # print sample_id
+            # collect needed arrays
+            coverage_hist, all_histogram = self.get_coverage_histogram(bam_file, os.path.join(self.outdir, sample_id + ".coverage.hist.txt"))
+            all_histogram = all_histogram[all_histogram.depth.astype(int) != 0]
+            depth = np.asarray(all_histogram['depth'], dtype=int)
+            depth_list.append(depth)
+            percent = np.asarray(all_histogram['percent'], dtype=float)
+            percent_list.append(percent)
+            fraction = 1 - np.cumsum(percent, dtype=float)
+            fraction_list.append(fraction)
+        # Figure 1
+
+        ax1.hist(depth_list, bins=500, color=palette, histtype='stepfilled', stacked=True)
+        ax1.set_xlim((min(depth_list[0]), max(depth_list[0])))
+        ax1.legend(self.labels, loc='best')
+        # Figure 2
+        ax2.hist(depth_list, cumulative=True, bins=500, histtype='stepfilled', color=palette, stacked=True)
+        ax2.set_xlim((min(depth_list[0]), max(depth_list[0])))
+        ax2.legend(self.labels, loc='best')
+        # Figure 3
+        for dep, frac in zip(depth_list, fraction_list):
+            ax3.plot(dep, frac)
+        ax3.legend(self.labels, loc='best')
+        # fig.show()
+        fig1.tight_layout()
+        fig1.savefig(os.path.join(self.outdir, 'coverage_histogram_in_amplicon_region.pdf'))
+        mpld3.save_html(fig1, os.path.join(self.outdir, "coverage_histogram_in_amplicon_region.html"))
+        print u"\U0001F37B" + "     Coverage Histogram ... Done"
+        fig2.tight_layout()
+        fig2.savefig(os.path.join(self.outdir, 'cumulative_coverage_saturation_plot.pdf'))
+        mpld3.save_html(fig2, os.path.join(self.outdir, "coverage_saturation.html"))
+        print u"\U0001F37B" + "     Coverage Saturation ... Done"
+        fig3.tight_layout()
+        fig3.savefig(os.path.join(self.outdir, 'targetd_region_coverage.pdf'))
+        mpld3.save_html(fig3, os.path.join(self.outdir, "targeted_region_coverage.html"))
+        print u"\U0001F37B" + "     Target Coverage ... Done"
+
+    def plot_coverage_heatmap(self, heatmap_name):
+        '''
+        This function calculates coverage across different bam files
+        Then it plot the heatmap of coverage per amplicon region
+        '''
+        region = pybedtools.BedTool(self.region_file)
+        result = region.multi_bam_coverage(bams=self.list_of_bam_files, output=os.path.join(self.outdir, "multicoverage.hist.txt"))
+        coverage_df = pd.read_table(result.fn, header=None)
+        ncols = coverage_df.shape[1]
+        data = coverage_df[list(coverage_df.columns[3:ncols])].astype(int)
+        # Set columns
+        data.columns = self.labels
+        # Set index
+        data_index = [str(chrom) + ":" + str(start) + "--" + str(end) for chrom, start, end in zip(list(coverage_df[coverage_df.columns[0]]), list(coverage_df[coverage_df.columns[1]]), list(coverage_df[coverage_df.columns[2]]))]
+        data['coordinates'] = data_index
+        data = data.set_index('coordinates')
+        #plot
+        fig = plt.figure()
+        sns.heatmap(data, square=True)
+        plt.xticks(rotation=90, fontsize=5)
+        plt.yticks(fontsize=5)
+        plt.title("Coverage within amplicon regions")
+        plt.ylabel("amplicon regions")
+        plt.xlabel("samples")
+        fig.tight_layout()
+        fig.savefig(os.path.join(self.outdir, heatmap_name))
+
+    def plot_allelic_frequencies_heatmap(self, allele_freq_image):
+        '''
+        Returns a dataframe containing only alleles frequencies from
+        the list of binomial test analysis
+
+        Concat dataframes (var frequencies)
+
+        alternatively in a loop we read a filename we split extension and we create an array
+        with the values of allele frequencies having the same name as the sample
+        Here is the process :
+        Initialize a global dataframe called all_samples_allele_frequencies
+        Columns = list of sample name (without TSV)
+        1- Read the file list
+        2- split the filename and the extension
+        3- replace every (-) in the filename by (_) because it cannot be included in variable name
+        4- Read the tsv file to a pandas dataframe df_tmp
+        5- Cut the column of var_freq into a variable with the same filename (example df.tmp -> SA495_Normal)
+        6- Append the result array to the golbal dataframe that will contain all allele frequencies of all the samples
+        7- plot the dataframe into a heatmap using matplotlib
+        '''
+        labels = []
+        all_samples_allele_frequencies = pd.DataFrame()
+        for sample_file in self.binomial_result_file_list:
+            # Create the sample name out of the file path
+            sample_name = os.path.basename(sample_file).split('.tsv')[0].replace('-', '_')
+            labels.append(sample_name)
+            # Load the variant_status table into a temporary dataframe
+            df_tmp = pd.read_csv(sample_file, sep='\t')
+            # Extract the var_freq column
+            var_freq = df_tmp['var_freq'].values
+            # Add it to the general dataframe that will be plotted
+            all_samples_allele_frequencies[sample_name] = var_freq.astype(float)
+        self.status_update("Plotting allele frequencies heatmap")
+        fig = plt.figure()
+        plt.subplot(1, 1, 1)
+        plt.title('Allele Frequencies')
+        plt.xlabel('Samples')
+        plt.ylabel('Positions')
+        Y = all_samples_allele_frequencies
+        plt.xticks(np.arange(Y.shape[1]))
+        plt.xticks(rotation=90, fontsize=8)
+        # Optional, I am sortng the positions in the dataframe to split those with high allele freq
+        # and low allel freq
+        plt.gca().set_xticklabels(self.labels)
+        palette = plt.cm.RdYlBu
+        palette.set_bad('black', 1.0)
+        plt.grid(False)
+        Ysorted = Y.sort(labels, ascending=[True] * len(self.labels))
+        plt.imshow(Ysorted, cmap=palette, vmin=0, vmax=1, interpolation='nearest', aspect='auto')
+        plt.colorbar()
+        fig.tight_layout()
+        fig.savefig(os.path.join(self.outdir, allele_freq_image))
+        mpld3.save_html(fig, os.path.join(self.outdir, "allele_frequencies.html"))
+        print u"\U0001F37B" + "     Allelic Frequencies Heatmap ... Done"
+
+    def plot_allelic_frequencies_heatmap_with_clusters(self, allele_freq_image):
+        '''
+        Returns a dataframe containing only alleles frequencies from
+        the list of binomial test analysis
+        Concat dataframes (var frequencies)
+        alternatively in a loop we read a filename we split extension and we create an array
+        with the values of allele frequencies having the same name as the sample
+        Here is the process :
+        Initialize a global dataframe called all_samples_allele_frequencies
+        Columns = list of sample name (without TSV)
+        1- Read the file list
+        2- split the filename and the extension
+        3- replace every (-) in the filename by (_) because it cannot be included in variable name
+        4- Read the tsv file to a pandas dataframe df_tmp
+        5- Cut the column of var_freq into a variable with the same filename (example df.tmp -> SA495_Normal)
+        6- Append the result array to the golbal dataframe that will contain all allele frequencies of all the samples
+        7- plot the dataframe into a heatmap using matplotlib
+        '''
+        labels = []
+        all_samples_allele_frequencies = pd.DataFrame()
+        for sample_file in self.binomial_result_file_list:
+                # Create the sample name out of the file path
+            sample_name = os.path.basename(sample_file).split('.tsv')[0].replace('-', '_')
+            labels.append(sample_name)
+            # Load the variant_status table into a temporary dataframe
+            df_tmp = pd.read_csv(sample_file, sep='\t')
+            # Extract the var_freq column
+            var_freq = df_tmp['var_freq'].values
+            # Add it to the general dataframe that will be plotted
+            all_samples_allele_frequencies[sample_name] = var_freq.astype(float)
+        tmp = pd.read_csv(self.binomial_result_file_list[0], sep='\t')
+        index_col = [str(a) + "--" + str(b) for a, b in zip(tmp.chrom, tmp.coord)]
+        all_samples_allele_frequencies.index = index_col
+        # drop nan values
+        all_samples_allele_frequencies = all_samples_allele_frequencies.fillna(80)
+        # set the threshold for NaN
+        threshold = 1.1
+        cmap = cm.Purples
+        cmap.set_over('slategray')
+        all_samples_allele_frequencies.reset_index(drop=True)
+        # calculate pairwise distances for rows
+        pairwise_dists = distance.squareform(distance.pdist(all_samples_allele_frequencies))
+        # create clusters
+        clusters = sch.linkage(pairwise_dists, method='complete')
+        # make dendrograms black rather than letting scipy color them
+        sch.set_link_color_palette(['black'])
+        # dendrogram without plot
+        # den = sch.dendrogram(clusters, color_threshold = np.inf, no_plot = True)
+        row_clusters = clusters
+        # calculate pairwise distances for columns
+        col_pairwise_dists = distance.squareform(distance.pdist(all_samples_allele_frequencies.T))
+        # cluster
+        col_clusters = sch.linkage(col_pairwise_dists, method='complete')
+        # heatmap with row names
+        fig = plt.figure(figsize=(15, 20), dpi=10)
+        heatmapGS = gridspec.GridSpec(2, 2, wspace=0.0, hspace=0.0, width_ratios=[0.25, 1], height_ratios=[0.25, 1])
+        ### col dendrogram ###
+        col_denAX = fig.add_subplot(heatmapGS[0, 1])
+        col_denD = sch.dendrogram(col_clusters, color_threshold=np.inf)
+        self.clean_axis(col_denAX)
+        ### row dendrogram ###
+        row_denAX = fig.add_subplot(heatmapGS[1, 0])
+        row_denD = sch.dendrogram(row_clusters, color_threshold=np.inf, orientation='right')
+        self.clean_axis(row_denAX)
+        # all_samples_allele_frequencies.index = [ 'position ' + str(x) for x in all_samples_allele_frequencies.index ]
+        # all_samples_allele_frequencies.columns = all_samples_allele_frequencies.columns[col_denD['leaves']]
+        ### heatmap ####
+        heatmapAX = fig.add_subplot(heatmapGS[1, 1])
+        axi = heatmapAX.imshow(all_samples_allele_frequencies.ix[row_denD['leaves'], col_denD[
+                               'leaves']], interpolation='nearest', aspect='auto', origin='lower', cmap=cm.Purples, vmax=threshold)
+        heatmapAX.grid(False)
+        self.clean_axis(heatmapAX)
+        ## row labels ##
+        heatmapAX.set_yticks(np.arange(all_samples_allele_frequencies.shape[0]))
+        heatmapAX.yaxis.set_ticks_position('right')
+        heatmapAX.set_yticklabels(all_samples_allele_frequencies.index[row_denD['leaves']], fontsize=5)
+        ## col labels ##
+        heatmapAX.set_xticks(np.arange(all_samples_allele_frequencies.shape[1]))
+        xlabelsL = heatmapAX.set_xticklabels(all_samples_allele_frequencies.columns[col_denD['leaves']])
+        # rotate labels 90 degrees
+        for label in xlabelsL:
+            label.set_rotation(90)
+        # remove the tick lines
+        for l in heatmapAX.get_xticklines() + heatmapAX.get_yticklines():
+            l.set_markersize(0)
+        ### scale colorbar ###
+        scale_cbGSSS = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=heatmapGS[0, 0], wspace=0.0, hspace=0.0)
+        # colorbar for scale in upper left corner
+        scale_cbAX = fig.add_subplot(scale_cbGSSS[0, 1])
+        # note that we could pass the norm explicitly with norm=my_norm
+        cb = fig.colorbar(axi, scale_cbAX)
+        cb.set_label('Allele Frequencies')
+        # move ticks to left side of colorbar to avoid problems with tight_layout
+        cb.ax.yaxis.set_ticks_position('left')
+        # move label to left side of colorbar to avoid problems with tight_layout
+        cb.ax.yaxis.set_label_position('left')
+        cb.outline.set_linewidth(0)
+        # make colorbar labels smaller
+        tickL = cb.ax.yaxis.get_ticklabels()
+        for t in tickL:
+            t.set_fontsize(t.get_fontsize() - 3)
+        fig.tight_layout()
+        fig.savefig(os.path.join(self.outdir, allele_freq_image))
+        # mpld3.save_html(fig, os.path.join(args.outdir, "allele_frequencies_with_cluster.html"))
+        print u"\U0001F37B" + "     Allelic Frequencies Heatmap with clusters... Done"
+
+    def plot_zygosity_matrix(self, allele_freq_image, cluster=0):
+        '''
+        Returns a dataframe containing only alleles frequencies from
+        the list of binomial test analysis
+        Concat dataframes (var frequencies)
+        alternatively in a loop we read a filename we split extension and we create an array
+        with the values of allele frequencies having the same name as the sample
+        Here is the process :
+        Initialize a global dataframe called all_samples_zygosity
+        Columns = list of sample name (without TSV)
+        1- Read the file list
+        2- split the filename and the extension
+        3- replace every (-) in the filename by (_) because it cannot be included in variable name
+        4- Read the tsv file to a pandas dataframe df_tmp
+        5- Cut the column of var_freq into a variable with the same filename (example df.tmp -> SA495_Normal)
+        6- Append the result array to the golbal dataframe that will contain all allele frequencies of all the samples
+        7- plot the dataframe into a heatmap using matplotlib
+        '''
+        labels = []
+        all_samples_zygosity = pd.DataFrame()
+        for sample_file in self.binomial_result_file_list:
+            # Create the sample name out of the file path
+            sample_name = os.path.basename(sample_file).split('.tsv')[0].replace('-', '_')
+            labels.append(sample_name)
+            # Load the variant_status table into a temporary dataframe
+            df_tmp = pd.read_csv(sample_file, sep='\t')
+            # convert zygosity into states
+            remap_zygosity = {'homozygote_wildtype': -1, 'heterozygote': 0, 'homozygote_mutant': 1, 'unknown': 80}
+            df_tmp = df_tmp.replace({'zygosity': remap_zygosity})
+            # Extract the zygosity column
+            zigosity = df_tmp['zygosity'].values
+            # Add it to the general dataframe that will be plotted
+            all_samples_zygosity[sample_name] = zigosity.astype(float)
+        #all_samples_zygosity = all_samples_zygosity[tmporder_a9255]
+        tmp = pd.read_csv(self.binomial_result_file_list[0], sep='\t')
+        #f = lambda x: 2324 if str(x).lower() in ['x', 'y'] else x
+        #index_col = [float(str(f(a)) + "." + str(b)) for a, b in zip(tmp.chrom, tmp.coord)]
+        #all_samples_zygosity.index = index_col
+        # drop nan values
+        all_samples_zygosity = all_samples_zygosity.sort()
+        all_samples_zygosity = all_samples_zygosity.fillna(80)
+        # set the threshold for NaN
+        threshold = 1.1
+        cmap = colors.ListedColormap(['#CC3333', '#FFCC33', '#0066CC'], 'indexed')
+        # bounds = [-1, -0.9, 0.9, 1]
+        # norm = colors.BoundaryNorm(bounds, cmap.N)
+        # cmap = cm.Purples
+        cmap.set_over('slategray')
+        all_samples_zygosity.reset_index(drop=True)
+        if cluster == 0:
+            # calculate pairwise distances for rows
+            pairwise_dists = distance.squareform(distance.pdist(all_samples_zygosity))
+            # create clusters
+            clusters = sch.linkage(pairwise_dists, method='complete')
+            # make dendrograms black rather than letting scipy color them
+            sch.set_link_color_palette(['black'])
+            # dendrogram without plot
+            # den = sch.dendrogram(clusters, color_threshold = np.inf, no_plot = True)
+            row_clusters = clusters
+            # calculate pairwise distances for columns
+            col_pairwise_dists = distance.squareform(distance.pdist(all_samples_zygosity.T))
+            # cluster
+            col_clusters = sch.linkage(col_pairwise_dists, method='complete')
+            # heatmap with row names
+            fig = plt.figure(figsize=(15, 20), dpi=10)
+            heatmapGS = gridspec.GridSpec(2, 2, wspace=0.0, hspace=0.0, width_ratios=[0.25, 1], height_ratios=[0.25, 1])
+            ### col dendrogram ###
+            col_denAX = fig.add_subplot(heatmapGS[0, 1])
+            col_denD = sch.dendrogram(col_clusters, color_threshold=np.inf)
+            self.clean_axis(col_denAX)
+            ### row dendrogram ###
+            row_denAX = fig.add_subplot(heatmapGS[1, 0])
+            row_denD = sch.dendrogram(row_clusters, color_threshold=np.inf, orientation='right')
+            self.clean_axis(row_denAX)
+            # all_samples_zygosity.index = [ 'position ' + str(x) for x in all_samples_zygosity.index ]
+            # all_samples_zygosity.columns = all_samples_zygosity.columns[col_denD['leaves']]
+            ### heatmap ####
+            heatmapAX = fig.add_subplot(heatmapGS[1, 1])
+            axi = heatmapAX.imshow(all_samples_zygosity.ix[row_denD['leaves'], col_denD['leaves']],
+                                   interpolation='nearest', aspect='auto', origin='lower', cmap=cmap, vmax=threshold)
+            heatmapAX.grid(False)
+            self.clean_axis(heatmapAX)
+            ## row labels ##
+            heatmapAX.set_yticks(np.arange(all_samples_zygosity.shape[0]))
+            heatmapAX.yaxis.set_ticks_position('right')
+            heatmapAX.set_yticklabels(all_samples_zygosity.index[row_denD['leaves']], fontsize=5)
+            ## col labels ##
+            heatmapAX.set_xticks(np.arange(all_samples_zygosity.shape[1]))
+            xlabelsL = heatmapAX.set_xticklabels(all_samples_zygosity.columns[col_denD['leaves']])
+            # rotate labels 90 degrees
+            for label in xlabelsL:
+                label.set_rotation(90)
+            # remove the tick lines
+            for l in heatmapAX.get_xticklines() + heatmapAX.get_yticklines():
+                l.set_markersize(0)
+            ### scale colorbar ###
+            scale_cbGSSS = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=heatmapGS[0, 0], wspace=0.0, hspace=0.0)
+            # colorbar for scale in upper left corner
+            scale_cbAX = fig.add_subplot(scale_cbGSSS[0, 1])
+            # note that we could pass the norm explicitly with norm=my_norm
+            cb = fig.colorbar(axi, scale_cbAX)
+            cb.set_label('Zygosity')
+            # move ticks to left side of colorbar to avoid problems with tight_layout
+            cb.ax.yaxis.set_ticks_position('left')
+            # move label to left side of colorbar to avoid problems with tight_layout
+            cb.ax.yaxis.set_label_position('left')
+            cb.outline.set_linewidth(0)
+            # make colorbar labels smaller
+            tickL = cb.ax.yaxis.set_ticklabels(['', 'homozygote_wildtype', '', '', 'heterozygote', '', '', 'homozygote_mutant'])
+            for t in tickL:
+                t.set_fontsize(t.get_fontsize() - 3)
+            fig.tight_layout()
+            fig.savefig(os.path.join(self.outdir, allele_freq_image))
+        else:
+            fig = plt.figure(figsize=(10, 15), dpi=10)
+            # heatmapGS = gridspec.GridSpec(2, 2, wspace=0.0, hspace=0.0, width_ratios=[0.25, 1], height_ratios=[0.25, 1])
+            heatmapAX = fig.add_subplot(1, 1, 1)
+            axi = heatmapAX.imshow(all_samples_zygosity, interpolation='nearest',
+                                   aspect='auto', origin='lower', cmap=cmap, vmax=threshold)
+            heatmapAX.grid(False)
+            self.clean_axis(heatmapAX)
+            ## row labels ##
+            heatmapAX.set_yticks(np.arange(all_samples_zygosity.shape[0]))
+            heatmapAX.yaxis.set_ticks_position('right')
+            heatmapAX.set_yticklabels(all_samples_zygosity.index, fontsize=5)
+            ## col labels ##
+            heatmapAX.set_xticks(np.arange(all_samples_zygosity.shape[1]))
+            xlabelsL = heatmapAX.set_xticklabels(all_samples_zygosity.columns)
+            # rotate labels 90 degrees
+            for label in xlabelsL:
+                label.set_rotation(90)
+            # remove the tick lines
+            for l in heatmapAX.get_xticklines() + heatmapAX.get_yticklines():
+                l.set_markersize(0)
+            fig.tight_layout()
+            fig.savefig(os.path.join(self.outdir, allele_freq_image))
+        # mpld3.save_html(fig, os.path.join(args.outdir, "allele_frequencies_with_cluster.html"))
+        print u"\U0001F37B" + "     Zygosity matrix... Done"
+
+    def plot_mapping_qualities_in_regions(self, mapq_plot_image):
+        '''
+        Return a plot with :
+        Y axis = amplicon regions
+        X axis = mapping qualities within these amplicon regions
+        This is done by intersection a bed version of a BAM file, with the region of interest (amplicon)
+        This will return a bed file with the 5th column being the mapq vector for that bam file
+        This function will reproduce this protocol for all BAM files in the list and plot them all on the same graph
+        '''
+        N = len(self.list_of_bam_files)
+        sample_colors = cm.get_cmap('RdYlBu', N)
+        palette = sample_colors(np.arange(N))
+        regions = pybedtools.BedTool(self.region_file)
+        # samples = []
+        list_of_mapq = []
+        self.status_update("Plotting mapping qualities")
+        fig = plt.figure()
+        mapqplot = fig.add_subplot(1, 1, 1)
+        mapqplot.set_title('Mapping Qualities inside regions')
+        mapqplot.set_ylabel('Number of reads')
+        mapqplot.set_xlabel('Mapping Quality')
+
+        for bam_file in self.list_of_bam_files:
+            alignment = pybedtools.BedTool(bam_file)
+            # sample_id = os.path.splitext(bam_file)[0]
+            # samples.append(sample_id)
+            # print sample_id
+            # collect needed arrays
+            mapq = []
+            result = alignment.bam_to_bed().intersect(regions)
+            for read in result:
+                mapq.append(int(read[4]))
+            list_of_mapq.append(mapq)
+
+        type(list_of_mapq)
+        print len(list_of_mapq)
+        try:
+            mapqplot.hist(list_of_mapq, color=palette, stacked=True)
+        except ValueError:
+            pass
+
+        mapqplot.legend(self.labels, loc='best')
+        fig.tight_layout()
+        fig.savefig(os.path.join(self.outdir, mapq_plot_image))
+        mpld3.save_html(fig, os.path.join(self.outdir, "mapping_qualities.html"))
+        print u"\U0001F37B" + "     Mapping Qualities Stacked Histogram ... Done"
+
+    def plot_in_target_outof_target_alignments(self, in_out_targets_result):
+        '''
+        This function generates a scatterplot showing in/out_of targets alignment
+        it iterates through the bam files and intersect with the regions and count the reads
+        '''
+        regions = pybedtools.BedTool(self.region_file)
+        counts_in = []
+        counts_out = []
+        for bam_file in self.list_of_bam_files:
+            alignment = pybedtools.BedTool(bam_file)
+            result_in = alignment.bam_to_bed().intersect(regions)
+            result_out = alignment.bam_to_bed().intersect(regions, v=True)
+            in_target = 0
+            for read in result_in:
+                in_target = in_target + 1
+            counts_in.append(float(in_target))
+            out_target = 0
+            for read in result_out:
+                out_target = out_target + 1
+            counts_out.append(float(out_target))
+        area = [(80 ** 2) * (float(m) / float(n)) for m, n in zip(counts_out, counts_in)]
+        N = len(self.list_of_bam_files)
+        sample_colors = cm.get_cmap('RdBu', N)
+        palette = sample_colors(np.arange(N))
+        fig = plt.figure()
+        for i in range(0, len(self.list_of_bam_files)):
+            plt.scatter(counts_in[i], counts_out[i], label=self.labels[i], s=area[i], edgecolor='black', c=palette[i])
+
+        for label, x, y in zip(self.labels, counts_in, counts_out):
+            plt.annotate(
+                label,
+                xy=(x, y), xytext=(-20, 20),
+                textcoords = 'offset points', ha = 'right', va = 'bottom',
+                bbox = dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3'))
+
+        # plt.legend(loc='best', scatterpoints=0)
+        plt.title('Mapping Inside Target Regions')
+        plt.ylabel('Off Targets')
+        plt.xlabel('In Targets')
+        fig.tight_layout()
+        fig.savefig(os.path.join(self.outdir, in_out_targets_result))
+        # mpld3.save_html(fig, os.path.join(args.outdir, "in_off_targets.html"))
+
+    def plot_in_off_target_fractions(self, in_out_fractions_result):
+        '''
+        This function is similar to the previous, but it plots the fraction of reads in and off targets
+        per sample, the plot is a bar charts
+        '''
+        regions = pybedtools.BedTool(self.region_file)
+        counts_in = []
+        counts_out = []
+        for bam_file in self.list_of_bam_files:
+            alignment = pybedtools.BedTool(bam_file)
+            result_in = alignment.bam_to_bed().intersect(regions)
+            result_out = alignment.bam_to_bed().intersect(regions, v=True)
+            in_target = 0
+            for read in result_in:
+                in_target = in_target + 1
+            counts_in.append(float(in_target))
+            out_target = 0
+            for read in result_out:
+                out_target = out_target + 1
+            counts_out.append(float(out_target))
+
+        # We create 3 vectors, total reads and fractions in and out
+        total_reads = [a + b for a, b in zip(counts_in, counts_out)]
+        fraction_in = [a / b for a, b in zip(counts_in, total_reads)]
+        fraction_out = [a / b for a, b in zip(counts_out, total_reads)]
+        # begin plots cosmetics
+        ind = np.arange(len(self.list_of_bam_files))
+        width = 0.5
+        # N = len(list_of_bam_files)
+        # sample_colors = cm.get_cmap('RdBu', N)
+        # palette = sample_colors(np.arange(N))
+        # end plot cosmetics
+        fig, ax1 = plt.subplots()
+        ax1.bar(ind, fraction_in, width, color='k')
+        ax1.bar(ind, fraction_out, width, color='y', bottom=fraction_in)
+        ax1.set_ylabel('Fraction of reads in/out target regions')
+        ax1.set_title('In/Off target regions')
+        ax1.set_xticks(ind + width / 2, self.labels)
+        # plt.yticks(np.arange(0,0.5,1,1.5))
+        # ax1.set_legend(('In Target', 'Off Target'), loc='best')
+
+        ax2 = ax1.twinx()
+        ax2.plot(total_reads, color='r')
+        ax2.set_ylabel('Total number of reads')
+
+        fig.tight_layout()
+        fig.savefig(os.path.join(self.outdir, in_out_fractions_result))
+
+    def plot_af_per_zygosity(self, allele_frequency_result):
+        '''
+        will add description later
+        '''
+        labels = []
+        # all_samples_allele_frequencies = pd.DataFrame()
+        for sample_file in self.binomial_result_file_list:
+                # Create the sample name out of the file path
+            sample_name = os.path.basename(sample_file).split('.tsv')[0].replace('-', '_')
+            labels.append(sample_name)
+            # Load the variant_status table into a temporary dataframe
+            df_tmp = pd.read_csv(sample_file, sep='\t')
+            # Extract the var_freq column
+            # var_freq = df_tmp['var_freq'].values
+            # extract the zygosity states
+            # zyg_state = df_tmp['zygosity'].values
+            df_het = df_tmp[df_tmp['zygosity'] == 'heterozygote']
+            df_hom_w = df_tmp[df_tmp['zygosity'] == 'homozygote_wildtype']
+            df_hom_m = df_tmp[df_tmp['zygosity'] == 'homozygote_mutant']
+        f, ax1 = plt.subplots(1, 1, sharex=True, figsize=(8, 6))
+        c1, c2, c3 = sns.color_palette("Set1", 3)
+        if len(df_hom_w['var_freq'].values) > 0:
+            sns.kdeplot(df_hom_w['var_freq'].values.astype(np.float), shade=True, color=c1, label="hom_w", ax=ax1)
+        if len(df_het['var_freq'].values) > 0:
+            sns.kdeplot(df_het['var_freq'].values.astype(np.float), shade=True, color=c2, label="het", ax=ax1)
+        if len(df_hom_m['var_freq'].values) > 0:
+            sns.kdeplot(df_hom_m['var_freq'].values.astype(np.float), shade=True, color=c3, label="hom_m", ax=ax1)
+        ax1.set_xlim(0, 1)
+        ax1.set_title(sample_name)
+        f.tight_layout()
+        f.savefig(os.path.join(self.outdir, sample_name + "_" + allele_frequency_result))
+
+    def plot_zygosity_distribution(self, zygosity_distribution_filename, group_name):
+        average_het = []
+        average_hom_m = []
+        average_hom_w = []
+        labels = []
+        for sample_file in self.binomial_result_file_list:
+            # Create the sample name out of the file path
+            sample_name = os.path.basename(sample_file).split('.tsv')[0].replace('-', '_')
+            labels.append(sample_name)
+            # Load the variant_status table into a temporary dataframe
+            df_tmp = pd.read_csv(sample_file, sep='\t')
+            # convert zygosity into states
+            remap_zygosity = {'homozygote_wildtype': -1, 'heterozygote': 0, 'homozygote_mutant': 1, 'unknown': 80}
+            df_tmp = df_tmp.replace({'zygosity': remap_zygosity})
+            # Extract the zygosity column
+            zigosity = df_tmp['zygosity'].values
+            # Extract corresponding allele frequency
+            var_freq = df_tmp['var_freq'].values
+            tmp_het = []
+            tmp_hom_w = []
+            tmp_hom_m = []
+            for a, b in zip(zigosity, var_freq):
+                if a == -1:
+                    tmp_hom_w.append(float(b))
+                elif a == 0:
+                    tmp_het.append(float(b))
+                elif a == 1:
+                    tmp_hom_m.append(float(b))
+            if tmp_hom_w:
+                average_hom_w.append(np.mean(tmp_hom_w))
+            if tmp_het:
+                average_het.append(np.mean(tmp_het))
+            if tmp_hom_m:
+                average_hom_m.append(np.mean(tmp_hom_m))
+
+        if len(self.binomial_result_file_list) > 1:
+            average_hom_w = [x for x in average_hom_w if ~np.isnan(x)]
+            average_het = [x for x in average_het if ~np.isnan(x)]
+            average_hom_m = [x for x in average_hom_m if ~np.isnan(x)]
+
+            f, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=False, figsize=(8, 6))
+            sns.set(style="white", palette="muted")
+            #sns.despine(left=True)
+            c1, c2, c3 = sns.color_palette("muted", 3)
+
+            tmp = pd.DataFrame()
+            tmp['average_hom_w'] = average_hom_w
+
+            bins = 1
+            binwidth = 0.01
+
+            #sns.kdeplot(tmp.average_hom_w.values, shade=False, color=c1,   label="hom_w", ax=ax1)
+            print tmp.average_hom_w.values
+            #sns.distplot(tmp.average_hom_w.values, color='red', kde=False, hist_kws={"histtype": "stepfilled"}, fit=stats.norm, axlabel="hom_w", ax=ax1)
+
+            if len(average_hom_w) == 0:
+                ax1.plot([])
+            else:
+                #ax1.hist(tmp.average_hom_w.values, 20, color='#CC3333', histtype='stepfilled')
+                #hist, bins = np.histogram(tmp.average_hom_w.values, bins=50, histtype='stepfilled')
+                #width = 0.001 * (bins[1] - bins[0])
+                #center = (bins[:-1] + bins[1:]) / 2
+                #ax1.bar(center, hist, align='center', width=width, color='#CC3333')
+                #sns.barplot(tmp.average_hom_w.values, color='red',  axlabel="hom_w", ax=ax1)
+                ax1.set_ylabel('count')
+                sns.distplot(tmp.average_hom_w.values, color='red', kde=False, hist_kws={"histtype": "stepfilled"}, axlabel="hom_w", ax=ax1)
+                ax1p = ax1.twinx()
+                sns.kdeplot(tmp.average_hom_w.values, shade=False, color='red', ax=ax1p)
+                ax1p.set_ylabel('kde')
+
+            tmp = pd.DataFrame()
+            tmp['average_het'] = average_het
+
+            #sns.kdeplot(tmp.average_het.values,  shade=False, color=c2, label="het", ax=ax2)
+            print tmp.average_het.values
+            #sns.distplot(tmp.average_het.values, color='orange', kde=False, hist_kws={"histtype": "stepfilled"}, fit=stats.norm, axlabel="het", ax=ax2)
+
+            if len(average_het) == 0:
+                ax2.plot([])
+            else:
+                #ax2.hist(tmp.average_het.values, 20, color='#FFCC33', histtype='stepfilled')
+                #hist, bins = np.histogram(tmp.average_het.values, bins=50, histtype='stepfilled')
+                #width = 0.01 * (bins[1] - bins[0])
+                #center = (bins[:-1] + bins[1:]) / 2
+                #ax2.bar(center, hist, align='center', width=width, color='#FFCC33')
+                #sns.barplot(tmp.average_het.values, color='orange',  axlabel="het", ax=ax2)
+                ax2.set_ylabel('count')
+                sns.distplot(tmp.average_het.values, color='orange', kde=False, hist_kws={"histtype": "stepfilled"}, axlabel="het", ax=ax2)
+                ax2p = ax2.twinx()
+                sns.kdeplot(tmp.average_het.values, shade=False, color='orange', ax=ax2p)
+                ax2p.set_ylabel('kde')
+
+            tmp = pd.DataFrame()
+            tmp['average_hom_m'] = average_hom_m
+
+            #sns.kdeplot(tmp.average_hom_m.values, shade=False,  color=c3, label="hom_m", ax=ax3)
+            print tmp.average_hom_m.values
+            #sns.distplot(tmp.average_hom_m.values, color='blue',  kde=False, hist_kws={"histtype": "stepfilled"}, fit=stats.norm, axlabel="hom_m", ax=ax3)
+
+            if len(average_hom_m) == 0:
+                ax3.plot([])
+            else:
+                #ax3.hist(tmp.average_hom_m.values, 20, color='#0066CC', histtype='stepfilled')
+                #hist, bins = np.histogram(tmp.average_hom_m.values, bins=50, histtype='stepfilled')
+                #width = 0.001 * (bins[1] - bins[0])
+                #center = (bins[:-1] + bins[1:]) / 2
+                #ax3.bar(center, hist, align='center', width=width, color='#0066CC')
+                #sns.barplot(tmp.average_hom_m.values, color='blue',  axlabel="hom_m", ax=ax3)
+                ax3.set_ylabel('count')
+                sns.distplot(tmp.average_hom_m.values, color='blue', kde=False, hist_kws={"histtype": "stepfilled"}, axlabel="hom_m", ax=ax3)
+                ax3p = ax3.twinx()
+                sns.kdeplot(tmp.average_hom_m.values, shade=False, color='blue', ax=ax3p)
+                ax3p.set_ylabel('kde')
+
+            ax1.set_xlim(0, 0.05)
+            ax1.set_xlabel('hom_w')
+            ax2.set_xlim(0, 1)
+            ax2.set_xlabel('het')
+            ax3.set_xlim(0.9, 1)
+            ax3.set_xlabel('hom_m')
+            # ax1.set_title(sample_name)
+            ax1.set_title('Allele Ratios distribution per zygosity \n ' + group_name)
+            f.tight_layout()
+            f.savefig(os.path.join(self.outdir, zygosity_distribution_filename))
+        else:
+            f, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=False, figsize=(8, 6))
+            sns.set(style="white", palette="muted")
+            # sns.despine(left=True)
+            c1, c2, c3 = sns.color_palette("muted", 3)
+
+            tmp = pd.DataFrame()
+            tmp['average_hom_w'] = tmp_hom_w
+
+            bins = 1
+            binwidth = 0.01
+
+            #sns.kdeplot(tmp.average_hom_w.values, shade=False, color=c1,   label="hom_w", ax=ax1)
+            print tmp.average_hom_w.values
+            #sns.distplot(tmp.average_hom_w.values, color='red', kde=False, hist_kws={"histtype": "stepfilled"}, fit=stats.norm, axlabel="hom_w", ax=ax1)
+
+            if len(average_hom_w) == 0:
+                ax1.plot([])
+            else:
+                #ax1.hist(tmp.average_hom_w.values, 20, color='#CC3333', histtype='stepfilled')
+                #hist, bins = np.histogram(tmp.average_hom_w.values, bins=50, histtype='stepfilled')
+                #width = 0.001 * (bins[1] - bins[0])
+                #center = (bins[:-1] + bins[1:]) / 2
+                #ax1.bar(center, hist, align='center', width=width, color='#CC3333')
+                #sns.barplot(tmp.average_hom_w.values, color='red',  axlabel="hom_w", ax=ax1)
+                ax1.set_ylabel('count')
+                sns.distplot(tmp.average_hom_w.values, color='red', kde=False, hist_kws={"histtype": "stepfilled"}, axlabel="hom_w", ax=ax1)
+                ax1p = ax1.twinx()
+                sns.kdeplot(tmp.average_hom_w.values, shade=False, color='red', ax=ax1p)
+                ax1p.set_ylabel('kde')
+
+            tmp = pd.DataFrame()
+            tmp['average_het'] = tmp_het
+
+            #sns.kdeplot(tmp.average_het.values,  shade=False, color=c2, label="het", ax=ax2)
+            print tmp.average_het.values
+            #sns.distplot(tmp.average_het.values, color='orange', kde=False, hist_kws={"histtype": "stepfilled"}, fit=stats.norm, axlabel="het", ax=ax2)
+
+            if len(average_het) == 0:
+                ax2.plot([])
+            else:
+                #ax2.hist(tmp.average_het.values, 20, color='#FFCC33', histtype='stepfilled')
+                #hist, bins = np.histogram(tmp.average_het.values, bins=50, histtype='stepfilled')
+                #width = 0.01 * (bins[1] - bins[0])
+                #center = (bins[:-1] + bins[1:]) / 2
+                #ax2.bar(center, hist, align='center', width=width, color='#FFCC33')
+                #sns.barplot(tmp.average_het.values, color='orange',  axlabel="het", ax=ax2)
+                ax2.set_ylabel('count')
+                sns.distplot(tmp.average_het.values, color='orange', kde=False, hist_kws={"histtype": "stepfilled"}, axlabel="het", ax=ax2)
+                ax2p = ax2.twinx()
+                sns.kdeplot(tmp.average_het.values, shade=False, color='orange', ax=ax2p)
+                ax2p.set_ylabel('kde')
+            tmp = pd.DataFrame()
+            tmp['average_hom_m'] = tmp_hom_m
+
+            #sns.kdeplot(tmp.average_hom_m.values, shade=False,  color=c3, label="hom_m", ax=ax3)
+            print tmp.average_hom_m.values
+            #sns.distplot(tmp.average_hom_m.values, color='blue',  kde=False, hist_kws={"histtype": "stepfilled"}, fit=stats.norm, axlabel="hom_m", ax=ax3)
+
+            if len(average_hom_m) == 0:
+                ax3.plot([])
+            else:
+                #ax3.hist(tmp.average_hom_m.values, 20, color='#0066CC', histtype='stepfilled')
+                #hist, bins = np.histogram(tmp.average_hom_m.values, bins=50, histtype='stepfilled')
+                #width = 0.001 * (bins[1] - bins[0])
+                #center = (bins[:-1] + bins[1:]) / 2
+                #ax3.bar(center, hist, align='center', width=width, color='#0066CC')
+                #sns.barplot(tmp.average_hom_m.values, color='blue',  axlabel="hom_m", ax=ax3)
+                ax3.set_ylabel('count')
+                sns.distplot(tmp.average_hom_m.values, color='blue', kde=False, hist_kws={"histtype": "stepfilled"}, axlabel="hom_m", ax=ax3)
+                ax3p = ax3.twinx()
+                sns.kdeplot(tmp.average_hom_m.values, shade=False, color='blue', ax=ax3p)
+                ax1p.set_ylabel('kde')
+
+            ax1.set_xlim(0, 0.05)
+            ax1.set_xlabel('hom_w')
+            ax2.set_xlim(0, 1)
+            ax2.set_xlabel('het')
+            ax3.set_xlim(0.9, 1)
+            ax3.set_xlabel('hom_m')
+            # ax1.set_title(sample_name)
+            ax1.set_title('Allele Ratios distribution per zygosity \n ' + group_name)
+            f.tight_layout()
+            f.savefig(os.path.join(self.outdir, zygosity_distribution_filename))
+
+    def plot_coverage_violin(self, violin_plot):
+        '''
+        Returns a dataframe containing only alleles frequencies from
+        the list of binomial test analysis
+        Concat dataframes (var frequencies)
+        alternatively in a loop we read a filename we split extension and we create an array
+        with the values of allele frequencies having the same name as the sample
+        Here is the process :
+        Initialize a global dataframe called all_samples_zygosity
+        Columns = list of sample name (without TSV)
+        1- Read the file list
+        2- split the filename and the extension
+        3- replace every (-) in the filename by (_) because it cannot be included in variable name
+        4- Read the tsv file to a pandas dataframe df_tmp
+        5- Cut the column of var_freq into a variable with the same filename (example df.tmp -> SA495_Normal)
+        6- Append the result array to the golbal dataframe that will contain all allele frequencies of all the samples
+        7- plot the dataframe into a heatmap using matplotlib
+        '''
+        labels = []
+        all_samples_coverage = pd.DataFrame()
+        for sample_file in self.binomial_result_file_list:
+            # Create the sample name out of the file path
+            sample_name = os.path.basename(sample_file).split('.tsv')[0].replace('-', '_')
+            labels.append(sample_name)
+            # Load the variant_status table into a temporary dataframe
+            df_tmp = pd.read_csv(sample_file, sep='\t')
+            # convert zygosity into states
+            remap_zygosity = {'homozygote_wildtype': -1, 'heterozygote': 0, 'homozygote_mutant': 1, 'unknown': 80}
+            df_tmp = df_tmp.replace({'zygosity': remap_zygosity})
+            # Extract the zygosity column
+            coverage = np.log10(df_tmp['ref_counts'].values + df_tmp['var_counts'].values)
+            # Add it to the general dataframe that will be plotted
+            all_samples_coverage[sample_name] = coverage.astype(int)
+        #all_samples_zygosity = all_samples_zygosity[tmporder]
+        tmp = pd.read_csv(self.binomial_result_file_list[0], sep='\t')
+        index_col = [str(a) + "--" + str(b) for a, b in zip(tmp.chrom, tmp.coord)]
+        all_samples_coverage.index = index_col
+        #print all_samples_coverage
+        fig = plt.figure()
+        sns.violinplot(all_samples_coverage, color="RdBu")
+        plt.xticks(rotation=90)
+        fig.tight_layout()
+        fig.savefig(os.path.join(self.outdir, violin_plot))
+        print u"\U0001F37B" + "     Coverage Violin plot ... Done"
+
+    def plot_insert_distribution(self):
+        '''
+        Function to plot insert size distribution. Recquires pysam
+        '''
+        #means_len = []
+        #std_len = []
+        bam_files, labels = self.list_of_bam_files, self.labels
+        for bam_file, sample in zip(bam_files, labels):
+          m = estimateInsertSizeDistribution(bam_file)
+          #means_len.append(m)
+          #std_len.append(s)
+          # Now let's plot distribution of average insert size
+          fig = plt.figure()
+          plt.xlabel('Insert Size in bp')
+          plt.ylabel('Number of Reads')
+          plt.title('Insert Size distribution')
+          plt.hist(m, bins=120)
+          fig.savefig(os.path.join(self.outdir, sample + '.insert_size_distribution.pdf'))
+          plt.close(fig)

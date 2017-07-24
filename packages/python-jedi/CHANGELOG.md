@@ -1,3 +1,9 @@
+## 0.3.7
+* Completely removed completion daemon using jediserver & ajax which is replaced by bufferedprocess. One of the reason mainly because a local interviewer 
+  denied giving developer job to me saying that i didn't mention about using '$'-symbol in jQuery and the other reason is bufferedprocess works which i may 
+  have figured it late. Not too late!
+* Removed enable python2, path2python options. Just enter the path to python executable at path2python field.
+
 ## 0.3.6
 * Fix for issue #9
 

@@ -10,11 +10,11 @@ var inherits = require('util').inherits;
 var BaseTerminal = require('./pty').Terminal;
 var pty;
 try {
-  pty = require('../build/Release/pty.node');
-} catch(e){
+  pty = require(path.join('..', 'build', 'Release', 'pty.node'));
+} catch (e) {
   console.warn(e.message);
-  pty = require(path.join('..', 'bin', process.platform, process.arch + ".node"));
-};
+  pty = require(path.join('..', 'bin', process.platform, process.arch + '.node'));
+}
 
 // Counter of number of "pipes" created so far.
 var pipeIncr = 0;
